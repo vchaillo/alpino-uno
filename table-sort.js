@@ -2,7 +2,8 @@ const collator = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' })
 export function sortValue(text) {
   const value = text.trim().replace(/\s+/g, ' ');
   if (!value || value === '—') return null;
-  if (/^[+-]?\d+(?:[.,]\d+)?(?:\s*%)?$/.test(value)) return Number(value.replace(',', '.').replace('%', '').trim());
+  const numeric = value.replace(/\s/g, '');
+  if (/^[+-]?\d+(?:[.,]\d+)?%?$/.test(numeric)) return Number(numeric.replace(',', '.').replace('%', ''));
   const time = value.match(/^(\d+):([0-5]\d)(?:\.(\d+))?$/);
   if (time) return Number(time[1]) * 60 + Number(time[2]) + Number(`0.${time[3] || 0}`);
   return value;
