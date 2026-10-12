@@ -8,12 +8,12 @@ A responsive, French-language Formula 1 explorer for every season from 1950 to t
 - Driver and constructor championships with proportional points bars.
 - Race results, grid positions, laps, finishing status, qualifying and sprint results.
 - Search and filters; favorites, watched races and watchlist across seasons.
-- Versioned localStorage collection, isolated behind a persistence adapter for a future Firebase migration.
-- Ten-minute session cache, request deduplication, race-condition protection and explicit error/retry states.
+- Google authentication and UID-scoped Firestore collection, profile and preferences, with optional legacy import.
+- In-memory request cache, request deduplication, race-condition protection and explicit error/retry states.
 
 ## Data
 
-[Jolpica F1](https://github.com/jolpica/jolpica-f1) provides the Ergast-compatible API. Data completeness varies by season and session. Results appear when published by the API; this is not a live timing app. Browser requests use the browser-managed User-Agent. No API key or backend required.
+[Jolpica F1](https://github.com/jolpica/jolpica-f1) provides the Ergast-compatible API. Data completeness varies by season and session. Results appear when published by the API; this is not a live timing app. Browser requests use the browser-managed User-Agent. Public F1 archives need no API key; account access uses Firebase Authentication and Cloud Firestore.
 
 ## Development
 
@@ -23,7 +23,7 @@ Serve this folder with any static HTTP server, for example `python3 -m http.serv
 
 The GitHub Actions workflow deploys public files to GitHub Pages on every push to `main`. Select **GitHub Actions** as the Pages source in repository settings.
 
-Personal lists are stored on the current browser/device and are not yet synchronized through Firebase.
+Personal lists synchronize through Firebase. Finish the console configuration and deploy the Firestore rules using [FIREBASE_SETUP.md](FIREBASE_SETUP.md); GitHub Pages deployment does not deploy Firebase rules.
 
 ## Career statistics
 
@@ -33,17 +33,17 @@ Records: world titles, Grand Prix wins, poles (not merely grid position), sprint
 
 Run `python3 scripts/refresh-statistics.py` to refresh the local snapshot.
 
-## Account preview
+## Accounts and cloud data
 
-The header's Profile link opens a demo profile with editable name, email and favorite team stored locally. Recent connections represent actual visits on this browser, not authenticated sessions. Password reset is a labeled simulation and sends no email. No authentication, password storage or server-side account changes are implemented.
+Google sign-in replaces the demo account. The editable name, favorite team, collection flags, theme and per-view layouts are stored under the authenticated UID in Firestore. Snapshots synchronize changes across devices; transaction writes keep watched/watchlist exclusive and preserve concurrent collection changes. Logout and account changes unsubscribe old listeners and immediately clear all personal state. Late callbacks from another UID are ignored. Data is cached only in memory, while Firebase Auth manages its own session persistence.
 
-## Hero instrument
+Legacy browser data is imported only after the user chooses the destination account on the profile page. Successful imports merge existing cloud records and remove the old browser data. Failed imports remain retryable and do not erase the local originals. Email addresses, demo sessions and anonymous visit logs are excluded from migration.
 
-The hero uses an AI-generated transparent industrial side-profile car drawing, combined with a native SVG dial and HTML year digits. The odometer animation works for both season arrows and the select control, cancels interrupted rolls, and respects reduced-motion settings. The SVG needle follows the selected season's position within the archive range. It is a decorative season gauge, not a speed measurement.
+See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for console steps, rules, tests and the data schema. `npm test` validates account switching and migration logic. `npm run test:rules` uses a local demo emulator and validates owner-only access and field constraints.
 
 ## Cockpit navigation
 
-A single detailed SVG cockpit uses mechanical controls, carbon hatching, a halo, fasteners and industrial annotations. The wheel display selects archive seasons rather than showing real telemetry. Click its screen for the searchable year picker, use the paddles for one-year changes, or scroll over the screen (up = next season, down = previous season). Wheel capture is local to the screen and rate-limited for trackpads. LEDs, rotary controls and screen highlights animate with the odometer and respect reduced motion. Mobile navigation remains below the season summary.
+The edge-to-edge hero uses an industrial driver's-eye cockpit illustration with native year digits and interactive paddles. Click the screen to choose a year, scroll over it to step seasons, or use left/right keys outside form inputs, dialogs and the map. The upper dashboard shows the next race, local start time, days remaining, published-race progress and championship top three. The display is archive navigation, not live telemetry. Animations respect reduced motion.
 
 ## Tables and session availability
 
@@ -57,19 +57,19 @@ Circuit opening dates are shown only where verified from the circuit's official 
 
 ## Annual calendar and flags
 
-The Calendar tab shows all twelve months, Monday-first, with race dates and accessible links opening race details. It follows the selected season and supports existing search/filters. Calendar placement uses each published race date. Country flags use bundled flag-icons SVG assets (MIT) rather than emoji fonts. Legacy storage keys are preserved so existing personal data remains available on the same GitHub Pages origin after the repository rename.
+The Calendar tab shows all twelve months, Monday-first, with race dates and accessible links opening race details. It follows the selected season and supports existing search/filters. Calendar placement uses each published race date. Country flags use bundled flag-icons SVG assets (MIT) rather than emoji fonts. Legacy browser data can be explicitly imported into the authenticated account on the same GitHub Pages origin.
 
 ## Layouts, loading and circuit world map
 
-Grand Prix, collection and circuit directory views offer gallery/list buttons with independent local preferences. Lists preserve race actions and circuit profiles, and reuse accessible table sorting. Season changes keep the previous card/row geometry as neutral placeholders until the matching request generation finishes; placeholder results are inert and hidden from assistive technology while the status announces loading. Independent collection, statistics and circuit views remain usable.
+Grand Prix, collection and circuit directory views offer gallery/list buttons with independent account preferences. Lists preserve race actions and circuit profiles, and reuse accessible table sorting. Season changes keep the previous card/row geometry as neutral placeholders until the matching request generation finishes; placeholder results are inert and hidden from assistive technology while the status announces loading. Independent collection, statistics and circuit views remain usable.
 
 The circuit directory begins with an equirectangular SVG world map using real F1DB coordinates. Nearby circuits are clustered; selecting a cluster zooms and lists its members. Map controls, dragging and keyboard arrows move the viewport; points and cluster members open the existing circuit profiles. Search filters both the directory and the map. The bundled world outline is adapted from Natural Earth 1:110m country geometries (public domain): https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson. No external map tiles, API key or map tracking are required.
 
-### Champions timeline and account preview
+### Champions timeline
 
 World champion entries use F1DB's explicit `championshipWon` field. Championship points and the margin to the runner-up retain each era's official dropped-score rules. The first race weekend marked as won identifies the title-deciding Grand Prix; this may include a sprint. Unfinished championships are excluded.
 
-The helmet menu exposes profile, persistent light/dark preference and a local demonstration session. Neither the email form nor the Google preview authenticates a user; no passwords or tokens are collected. Firebase integration remains a separate step.
+The helmet menu exposes the real profile, synchronized appearance and Firebase logout.
 
 The cockpit illustration is a generated industrial driver's-eye sketch with a blank display, black/red bodywork and a pit-lane perspective. Native HTML overlays provide the animated year, wheel scroll, paddles and accessible season dialog.
 
@@ -77,7 +77,7 @@ The cockpit illustration is a generated industrial driver's-eye sketch with a bl
 
 The next-race summary uses the API's race start time in the visitor's timezone and a days-remaining countdown. Race progress counts published main-race results. The top three drivers show team emblems. Current emblems are local assets from Formula1.com; see `assets/teams/SOURCES.md`. Historical constructors without a verified emblem use their initials rather than a different team's logo. Career records use the last known constructor; champion timeline entries use that season's last constructor, and circuit winners use their last winning constructor on that circuit.
 
-The steering-wheel display and paddles are the season controls. Left/right keyboard arrows also navigate seasons when focus is outside inputs, buttons, dialogs and the world map. Wheel zoom on the circuit map follows the pointer; it is limited to 1–16×. Marker hints appear on pointer hover or keyboard focus. The helmet menu's appearance switch saves a local preference.
+The steering-wheel display and paddles are the season controls. Left/right keyboard arrows also navigate seasons when focus is outside inputs, buttons, dialogs and the world map. Wheel zoom on the circuit map follows the pointer; it is limited to 1–16×. Marker hints appear on pointer hover or keyboard focus. The helmet menu's appearance switch saves an account preference in Firestore, or a temporary in-memory choice for guests.
 
 ### Constructor profiles and direct race navigation
 

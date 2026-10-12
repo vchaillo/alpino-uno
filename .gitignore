@@ -1,0 +1,7 @@
+node_modules/
+__pycache__/
+*.pyc
+*-debug.log
+firebase-debug.log
+.firebase/
+dist/

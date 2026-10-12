@@ -1,0 +1,40 @@
+import test, {before,after} from 'node:test';
+import fs from 'node:fs';
+import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
+import {doc,setDoc,getDoc,deleteDoc,updateDoc,collection,getDocs,serverTimestamp,Timestamp} from 'firebase/firestore';
+let env;
+before(async()=>{env=await initializeTestEnvironment({projectId:'demo-calpino-uno',firestore:{host:'127.0.0.1',port:8086,rules:fs.readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')}});});
+after(async()=>{await env?.cleanup();});
+const profile=()=>({name:'Alice',favoriteTeam:'Ferrari',theme:'dark',layouts:{races:'list'},migrationComplete:false,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+const race={season:'2026',round:'1',date:'2026-03-08',time:'04:00:00Z',raceName:'Australian GP',Circuit:{circuitId:'albert_park',circuitName:'Albert Park',url:'https://example.com',Location:{locality:'Melbourne',country:'Australia',lat:'-37.85',long:'144.97'}}};
+const favorite=()=>({favorite:true,watched:false,watchlist:false,race,updatedAt:serverTimestamp()});
+test('owners can create and update their profile; anonymous access and cross-UID access are denied',async()=>{
+ const alice=env.authenticatedContext('alice').firestore(),bob=env.authenticatedContext('bob').firestore(),guest=env.unauthenticatedContext().firestore();
+ await assertSucceeds(setDoc(doc(alice,'users/alice'),profile()));await assertSucceeds(getDoc(doc(alice,'users/alice')));
+ await assertSucceeds(updateDoc(doc(alice,'users/alice'),{theme:'light',updatedAt:serverTimestamp()}));
+ await assertFails(getDoc(doc(bob,'users/alice')));await assertFails(getDoc(doc(guest,'users/alice')));
+ await assertFails(setDoc(doc(alice,'users/bob'),profile()));await assertFails(getDocs(collection(alice,'users')));
+ await assertFails(updateDoc(doc(alice,'users/alice'),{admin:true,updatedAt:serverTimestamp()}));
+ await assertFails(updateDoc(doc(alice,'users/alice'),{createdAt:Timestamp.fromMillis(1),updatedAt:serverTimestamp()}));
+ await assertFails(updateDoc(doc(alice,'users/alice'),{layouts:{unknown:'list'},updatedAt:serverTimestamp()}));
+});
+test('favorites, seen and watchlist entries are private, typed and mutually exclusive',async()=>{
+ const alice=env.authenticatedContext('alice').firestore(),bob=env.authenticatedContext('bob').firestore(),guest=env.unauthenticatedContext().firestore();
+ await assertSucceeds(setDoc(doc(alice,'users/alice/collection/2026-1'),favorite()));
+ await assertSucceeds(getDocs(collection(alice,'users/alice/collection')));
+ await assertFails(getDocs(collection(bob,'users/alice/collection')));await assertFails(getDoc(doc(guest,'users/alice/collection/2026-1')));
+ await assertFails(setDoc(doc(bob,'users/alice/collection/2026-1'),favorite()));
+ await assertFails(setDoc(doc(alice,'users/alice/collection/2026-2'),favorite()));
+ await assertFails(setDoc(doc(alice,'users/alice/collection/2026-1'),{...favorite(),watched:true,watchlist:true}));
+ await assertFails(setDoc(doc(alice,'users/alice/collection/2026-1'),{...favorite(),favorite:'yes'}));
+ await assertFails(setDoc(doc(alice,'users/alice/collection/2026-1'),{...favorite(),extra:'forbidden'}));
+ await assertFails(setDoc(doc(alice,'users/alice/collection/2026-1'),{...favorite(),race:{...race,secret:'forbidden'}}));
+ await assertSucceeds(deleteDoc(doc(alice,'users/alice/collection/2026-1')));
+});
+test('connection history cannot be read across accounts or rewritten after creation',async()=>{
+ const alice=env.authenticatedContext('alice').firestore(),bob=env.authenticatedContext('bob').firestore();
+ const ref=doc(alice,'users/alice/signins/1000'),value={signedInAt:Timestamp.fromMillis(1000),createdAt:serverTimestamp(),browser:'Chrome',device:'Ordinateur'};
+ await assertSucceeds(setDoc(ref,value));await assertSucceeds(getDoc(ref));
+ await assertFails(setDoc(ref,{...value,browser:'Changed'}));await assertFails(getDoc(doc(bob,'users/alice/signins/1000')));
+ await assertFails(setDoc(doc(alice,'users/alice/signins/2000'),{...value,extra:true}));
+});
