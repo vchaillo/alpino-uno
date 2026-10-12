@@ -24,3 +24,11 @@ Serve this folder with any static HTTP server, for example `python3 -m http.serv
 The GitHub Actions workflow deploys public files to GitHub Pages on every push to `main`. Select **GitHub Actions** as the Pages source in repository settings.
 
 Personal lists are stored on the current browser/device and are not yet synchronized through Firebase.
+
+## Career statistics
+
+The Statistics tab uses a compact snapshot adapted from [F1DB](https://github.com/f1db/f1db), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribution, source version and latest completed race date appear in the UI. The deployment regenerates the snapshot from the latest F1DB release on each push and daily. No additional data license restrictions are introduced by this adaptation.
+
+Records: world titles, Grand Prix wins, poles (not merely grid position), sprint wins, podiums, fastest laps, race starts, completed laps, grand slams and win percentage (minimum 20 starts for records). Driver profiles include season-by-season statistics. Laps led are unavailable in this source and explicitly marked; completed laps are not presented as laps led. Raw points and win rates need era context.
+
+Run `python3 scripts/refresh-statistics.py` to refresh the local snapshot.

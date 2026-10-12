@@ -1,3 +1,4 @@
+import { createStatistics } from './statistics.js';
 import { flagEmoji, teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
@@ -14,7 +15,7 @@ function teamIdentity(team, season) {
   return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span>${flag(team?.nationality)}<span>${escapeHTML(team?.name || '—')}</span></span>`;
 }
 function driverIdentity(driver, team, season) {
-  return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span>${flag(driver?.nationality)}<span>${escapeHTML(fullName(driver))}</span></span>`;
+  return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span>${flag(driver?.nationality)}<button class="driver-link" data-driver-name="${escapeHTML(fullName(driver))}">${escapeHTML(fullName(driver))}<span class="profile-arrow" aria-hidden="true">↗</span></button></span>`;
 }
 const storageKey = 'formula-one:collection:v1';
 let collection = {};
@@ -77,11 +78,11 @@ function standingsTable(items, constructors = false) {
   return `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>${constructors ? 'Écurie' : 'Pilote'}</th><th>${constructors ? 'Nationalité' : 'Écurie'}</th><th>Victoires</th><th>Points</th></tr></thead><tbody>${filtered.map((item) => `<tr style="--team-color:${teamColor(constructors ? item.Constructor : item.Constructors?.[0], state.year)}"><td>${escapeHTML(item.position)}</td><td><strong>${constructors ? teamIdentity(item.Constructor, state.year) : driverIdentity(item.Driver, item.Constructors?.[0], state.year)}</strong></td><td>${constructors ? `${flag(item.Constructor.nationality)} ${escapeHTML(item.Constructor.nationality)}` : `<span class="team-list">${(item.Constructors || []).map((team) => teamIdentity(team, state.year)).join('')}</span>`}</td><td>${escapeHTML(item.wins)}</td><td class="points"><strong>${escapeHTML(item.points)}</strong><span class="bar" style="width:${Number(item.points) / max * 100}%"></span></td></tr>`).join('')}</tbody></table></div>`;
 }
 function render() {
-  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
+  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
   $('#section-label').textContent = titles[state.view][0]; $('#section-title').textContent = titles[state.view][1];
   $('#filter').hidden = !['races', 'collection'].includes(state.view);
   $('#tabs').querySelectorAll('button').forEach((button) => { if (button.dataset.view === state.view) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
-  if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
+  if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
   $('#results').setAttribute('aria-busy', 'false');
 }
 async function loadSeason() {
@@ -101,6 +102,7 @@ async function loadSeason() {
   $('#retry')?.addEventListener('click', loadSeason); render();
 }
 const dialog = $('#race-dialog');
+const statistics = createStatistics({ $, escapeHTML, dialog, driverIdentity, state });
 async function showSession(race, session, token) {
   $('#session-results').innerHTML = '<p class="empty">Chargement…</p>';
   try {
