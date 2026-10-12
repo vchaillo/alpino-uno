@@ -26,6 +26,11 @@ def generate(release, archive, svg_archive=None):
     completed = [race for race in read('races') if race['id'] in completed_ids]
     last_race = max(completed, key=lambda race: race['date'])
     metrics = ['totalChampionshipWins', 'totalRaceStarts', 'totalRaceWins', 'totalPodiums', 'totalPolePositions', 'totalFastestLaps', 'totalSprintRaceWins', 'totalSprintRaceStarts', 'totalRaceLaps', 'totalGrandSlams', 'totalPoints']
+    constructors = {row['id']: row for row in read('constructors')}
+    season_teams = {}
+    for result in sorted(results, key=lambda row: (row['year'], row['round'])):
+        constructor = constructors[result['constructorId']]
+        season_teams[(result['driverId'], result['year'])] = {'id': constructor['id'], 'name': constructor['name']}
     drivers = []
     for driver in read('drivers'):
         country = countries[driver['nationalityCountryId']]
@@ -34,8 +39,9 @@ def generate(release, archive, svg_archive=None):
             'id': driver['id'], 'name': driver['name'], 'firstName': driver['firstName'], 'lastName': driver['lastName'],
             'country': country['name'], 'countryCode': country['alpha2Code'], 'birthDate': driver['dateOfBirth'],
             'bestChampionshipPosition': driver['bestChampionshipPosition'],
+            'team': season_teams.get((driver['id'], max((row['year'] for row in rows), default=0))),
             **{key: driver.get(key) for key in metrics},
-            'seasons': [{ 'year': row['year'], 'position': row['positionNumber'], **{key: row.get(key) for key in metrics if key != 'totalChampionshipWins'} } for row in rows]
+            'seasons': [{ 'year': row['year'], 'position': row['positionNumber'], 'team': season_teams.get((driver['id'], row['year'])), **{key: row.get(key) for key in metrics if key != 'totalChampionshipWins'} } for row in rows]
         })
     final_standings = read('seasons-driver-standings')
     race_standings = read('races-driver-standings')

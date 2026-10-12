@@ -51,6 +51,11 @@ export function createCockpits({ initialYear, onYearChange }) {
     wheelDelta = 0; lastWheelChange = performance.now();
     if (nextYear !== year) onYearChange(nextYear);
   }, {passive:false});
+  window.addEventListener('keydown',event=>{
+    if (!['ArrowLeft','ArrowRight'].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey || document.querySelector('dialog[open]') || !root.getClientRects().length || event.target.closest('input,select,textarea,button,[contenteditable],.world-map')) return;
+    const nextYear=Math.max(1950,Math.min(maximumYear,year+(event.key==='ArrowRight'?1:-1)));
+    if(nextYear!==year){event.preventDefault();onYearChange(nextYear);}
+  });
   screen.addEventListener('mouseleave', () => { wheelDelta = 0; });
   function renderChoices() {
     const query = search.value.trim();

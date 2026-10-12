@@ -72,3 +72,9 @@ World champion entries use F1DB's explicit `championshipWon` field. Championship
 The helmet menu exposes profile, persistent light/dark preference and a local demonstration session. Neither the email form nor the Google preview authenticates a user; no passwords or tokens are collected. Firebase integration remains a separate step.
 
 The cockpit illustration is a generated industrial driver's-eye sketch with a blank display, black/red bodywork and a pit-lane perspective. Native HTML overlays provide the animated year, wheel scroll, paddles and accessible season dialog.
+
+### Compact season dashboard
+
+The next-race summary uses the API's race start time in the visitor's timezone and a days-remaining countdown. Race progress counts published main-race results. The top three drivers show team emblems. Current emblems are local assets from Formula1.com; see `assets/teams/SOURCES.md`. Historical constructors without a verified emblem use their initials rather than a different team's logo. Career records use the last known constructor; champion timeline entries use that season's last constructor, and circuit winners use their last winning constructor on that circuit.
+
+The steering-wheel display and paddles are the season controls. Left/right keyboard arrows also navigate seasons when focus is outside inputs, buttons, dialogs and the world map. Wheel zoom on the circuit map follows the pointer; it is limited to 1–16×. Marker hints appear on pointer hover or keyboard focus. The helmet menu's appearance switch saves a local preference.

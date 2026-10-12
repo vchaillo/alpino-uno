@@ -41,3 +41,13 @@ export function teamColor(team, season) {
   if (id === 'sauber' && Number(season) < 2024) return '#61A4E8';
   return TEAM_COLORS[id] || '#9A9AA6';
 }
+
+const TEAM_LOGOS = { mercedes:'mercedes', ferrari:'ferrari', mclaren:'mclaren', red_bull:'redbullracing', 'red-bull':'redbullracing', 'red-bull-racing':'redbullracing', rb:'racingbulls', racing_bulls:'racingbulls', 'racing-bulls':'racingbulls', alpine:'alpine', haas:'haasf1team', audi:'audi', williams:'williams', aston_martin:'astonmartin', 'aston-martin':'astonmartin', cadillac:'cadillac' };
+export function teamLogo(team) {
+  const id = team?.constructorId || team?.id;
+  const name = String(team?.name || 'Écurie non renseignée');
+  const escaped = name.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  if (TEAM_LOGOS[id]) return `<img class="team-logo" src="assets/teams/${TEAM_LOGOS[id]}.webp" alt="${escaped}" title="${escaped}" width="32" height="28" loading="lazy">`;
+  const initials=name==='Écurie non renseignée'?'—':name.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase();
+  return `<span class="team-logo team-logo-fallback" title="${escaped}" aria-label="${escaped}">${initials}</span>`;
+}
