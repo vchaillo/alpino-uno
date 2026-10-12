@@ -43,8 +43,10 @@ export function teamColor(team, season) {
 }
 
 const TEAM_LOGOS = {"mercedes": "mercedes.webp", "ferrari": "ferrari.webp", "mclaren": "mclaren.webp", "redbullracing": "redbullracing.webp", "racingbulls": "racingbulls.webp", "alpine": "alpine.webp", "haasf1team": "haasf1team.webp", "audi": "audi.webp", "williams": "williams.webp", "astonmartin": "astonmartin.webp", "cadillac": "cadillac.webp", "alfa-romeo": "alfa-romeo.png", "lotus-f1": "lotus-f1.png", "caterham": "caterham.png", "marussia": "marussia.png", "renault": "renault.png", "kick-sauber": "kick-sauber.png", "alphatauri": "alphatauri.png", "manor": "manor.png", "force-india": "force-india.png", "rb": "rb.png", "sauber": "sauber.png", "racing-point": "racing-point.png", "toro-rosso": "toro-rosso.png", "benetton": "benetton.png", "brawn": "brawn.png", "prost": "prost.png", "theodore": "theodore.png", "bmw-sauber": "bmw-sauber.svg", "red_bull": "redbullracing.webp", "red-bull": "redbullracing.webp", "red-bull-racing": "redbullracing.webp", "racing_bulls": "racingbulls.webp", "racing-bulls": "racingbulls.webp", "haas": "haasf1team.webp", "aston_martin": "astonmartin.webp", "aston-martin": "astonmartin.webp", "alfa": "alfa-romeo.png", "toro_rosso": "toro-rosso.png", "racing_point": "racing-point.png", "force_india": "force-india.png", "lotus_f1": "lotus-f1.png", "kick_sauber": "kick-sauber.png", "bmw_sauber": "bmw-sauber.svg"};
-export function teamLogo(team) {
-  const id = team?.constructorId || team?.id;
+export function teamLogo(team, season) {
+  let id = team?.constructorId || team?.id;
+  if (id === 'rb' && Number(season) >= 2025) id='racing-bulls';
+  if (id === 'sauber' && Number(season) >= 2024 && Number(season) <= 2025) id='kick-sauber';
   const name = String(team?.name || 'Écurie non renseignée');
   const escaped = name.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   if (TEAM_LOGOS[id]) return `<img class="team-logo" src="assets/teams/${TEAM_LOGOS[id]}" alt="${escaped}" title="${escaped}" width="32" height="28" loading="lazy">`;

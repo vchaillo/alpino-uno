@@ -1,17 +1,19 @@
-import { teamLogo } from './branding.js?v=20';
+import { teamLogo } from './branding.js?v=21';
 import { renderFlag } from './flags.js?v=12';
 const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const number=value=>Number(value||0).toLocaleString('fr-FR',{maximumFractionDigits:1});
 export function createTeams({ $, escapeHTML, dialog, state, load, onSeason }) {
   let generation=0;
-  async function open(id,name) {
+  async function open(id,name,year) {
     const token=++generation;state.detailGeneration++;
     $('#race-detail').innerHTML='<p class="empty">Chargement de la fiche écurie…</p>';
     if(!dialog.open)dialog.showModal();
     try {
       const snapshot=await load();if(token!==generation||!dialog.open)return;
       const aliases={alfa:'alfa-romeo',lotus_f1:'lotus-f1',racing_point:'racing-point',force_india:'force-india',toro_rosso:'toro-rosso',bmw_sauber:'bmw-sauber',red_bull:'red-bull',aston_martin:'aston-martin'};
-      const key=aliases[id]||String(id||'').replaceAll('_','-');
+      let key=aliases[id]||String(id||'').replaceAll('_','-');
+      if(id==='rb' && Number(year)>=2025)key='racing-bulls';
+      if(id==='sauber' && Number(year)>=2024 && Number(year)<=2025)key='kick-sauber';
       const records=snapshot.teams||[];
       const team=records.find(row=>row.id===key)||records.find(row=>normalize(row.name)===normalize(name));
       if(!team){$('#race-detail').innerHTML='<h2 id="race-title">Écurie non identifiée</h2><p>La fiche de cette écurie n’est pas disponible dans les archives.</p>';return;}
@@ -21,7 +23,7 @@ export function createTeams({ $, escapeHTML, dialog, state, load, onSeason }) {
       $('#team-profile-select').addEventListener('change',event=>open(event.target.value));
     } catch(error) {if(token===generation)$('#race-detail').innerHTML=`<h2 id="race-title">Fiche écurie indisponible</h2><p>${escapeHTML(error.message)}</p><button id="retry-team">Réessayer</button>`;$('#retry-team')?.addEventListener('click',()=>open(id,name));}
   }
-  document.addEventListener('click',event=>{const target=event.target.closest('[data-team-id]');if(target && target.dataset.teamId)open(target.dataset.teamId,target.dataset.teamName);});
+  document.addEventListener('click',event=>{const target=event.target.closest('[data-team-id]');if(target && target.dataset.teamId)open(target.dataset.teamId,target.dataset.teamName,target.dataset.teamYear);});
   $('#race-detail').addEventListener('click',event=>{const button=event.target.closest('[data-team-season]');if(button && onSeason){dialog.close();onSeason(Number(button.dataset.teamSeason));}});
   dialog.addEventListener('close',()=>generation++);
   return {open};

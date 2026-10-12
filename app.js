@@ -1,4 +1,4 @@
-import { createTeams } from './teams.js?v=20';
+import { createTeams } from './teams.js?v=21';
 import { createViewLayout } from './view-layout.js';
 import { enableTableSorting } from './table-sort.js?v=16';
 import { trophyIcon } from './icons.js';
@@ -8,7 +8,7 @@ import { createCircuits } from './circuits.js?v=20';
 import { createCockpits } from './cockpit.js?v=20';
 import { createProfile } from './profile.js?v=20';
 import { createStatistics } from './statistics.js?v=20';
-import { teamColor, teamLogo } from './branding.js?v=20';
+import { teamColor, teamLogo } from './branding.js?v=21';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
 const $ = (selector) => document.querySelector(selector);
@@ -18,7 +18,7 @@ const dateLabel = (race) => new Date(`${race.date}T${race.time || '12:00:00Z'}`)
 const fullName = (driver) => `${driver?.givenName || ''} ${driver?.familyName || ''}`.trim();
 const flag = renderFlag;
 function teamIdentity(team, season) {
-  return `<span class="identity">${teamLogo(team)}<button class="team-link" data-team-id="${escapeHTML(team?.constructorId || team?.id || '')}" data-team-name="${escapeHTML(team?.name || '')}">${escapeHTML(team?.name || '—')}</button></span>`;
+  return `<span class="identity">${teamLogo(team,season)}<button class="team-link" data-team-id="${escapeHTML(team?.constructorId || team?.id || '')}" data-team-name="${escapeHTML(team?.name || '')}" data-team-year="${season}">${escapeHTML(team?.name || '—')}</button></span>`;
 }
 function driverIdentity(driver, team, season, showTeam = true, winner = false) {
   return `<span class="identity">${showTeam ? teamLogo(team) : ''}<button class="driver-link" data-driver-name="${escapeHTML(fullName(driver))}">${escapeHTML(fullName(driver))}</button>${winner ? trophyIcon : ''}</span>`;
