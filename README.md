@@ -36,3 +36,7 @@ Run `python3 scripts/refresh-statistics.py` to refresh the local snapshot.
 ## Account preview
 
 The header's Profile link opens a demo profile with editable name, email and favorite team stored locally. Recent connections represent actual visits on this browser, not authenticated sessions. Password reset is a labeled simulation and sends no email. No authentication, password storage or server-side account changes are implemented.
+
+## Hero instrument
+
+The hero uses an AI-generated transparent industrial side-profile car drawing, combined with a native SVG dial and HTML year digits. The odometer animation works for both season arrows and the select control, cancels interrupted rolls, and respects reduced-motion settings. The SVG needle follows the selected season's position within the archive range. It is a decorative season gauge, not a speed measurement.
