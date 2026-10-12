@@ -1,4 +1,4 @@
-import { renderFlag } from './flags.js';
+import { renderFlag } from './flags.js?v=12';
 const METRICS = {
   totalChampionshipWins: ['Titres mondiaux', 'Championnats pilotes remportés. La saison en cours compte uniquement si le titre a déjà été attribué par la source.'],
   totalRaceWins: ['Victoires en Grand Prix', 'Victoires en course principale, hors sprints.'],

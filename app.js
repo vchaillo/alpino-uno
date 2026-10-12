@@ -1,9 +1,9 @@
-import { renderFlag } from './flags.js';
+import { renderFlag } from './flags.js?v=12';
 import { renderAnnualCalendar } from './calendar.js';
-import { createCircuits } from './circuits.js?v=10';
+import { createCircuits } from './circuits.js?v=12';
 import { createCockpits } from './cockpit.js?v=7';
 import { createProfile } from './profile.js';
-import { createStatistics } from './statistics.js?v=10';
+import { createStatistics } from './statistics.js?v=12';
 import { teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
