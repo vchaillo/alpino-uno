@@ -33,3 +33,5 @@ button,input,select,dialog,.race,.table-wrap,.empty,.account-card,.account-avata
 @media(prefers-reduced-motion:reduce){.season-shifting *,.paddle-pressed{animation:none!important}}
 
 body *{border-radius:0!important}.team-dot,.visit-dot,.calendar-key,.race-day i{border-radius:50%!important}
+/* Keep account information above the fold instead of rendering the cockpit first. */
+.profile-view .hero.cockpit-experiments{display:none}
