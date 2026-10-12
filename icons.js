@@ -1,0 +1,1 @@
+export const trophyIcon = '<svg class="trophy-icon" viewBox="0 0 24 24" role="img" aria-label="Vainqueur"><path d="M7 3h10v5c0 4-2 6-5 6S7 12 7 8V3Zm0 2H3v3c0 3 2 5 6 5m8-8h4v3c0 3-2 5-6 5M12 14v5m-4 2h8m-7-2h6"/></svg>';

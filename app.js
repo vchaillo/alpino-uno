@@ -1,8 +1,10 @@
+import { enableTableSorting } from './table-sort.js';
+import { trophyIcon } from './icons.js';
 import { renderFlag } from './flags.js?v=12';
 import { renderAnnualCalendar } from './calendar.js';
 import { createCircuits } from './circuits.js?v=12';
-import { createCockpits } from './cockpit.js?v=7';
-import { createProfile } from './profile.js';
+import { createCockpits } from './cockpit.js?v=14';
+import { createProfile } from './profile.js?v=14';
 import { createStatistics } from './statistics.js?v=12';
 import { teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
@@ -69,7 +71,7 @@ function renderRaces() {
   const races = state.view === 'collection' ? Object.values(collection).filter((item) => item.race && (item.favorite || item.watched || item.watchlist)).map((item) => item.race).sort((a,b) => b.date.localeCompare(a.date)).filter(matches) : state.races.filter(matches);
   $('#results').innerHTML = races.length ? `<div class="grid">${races.map((race) => {
     const winner = state.view === 'collection' ? null : state.winners.find((item) => item.round === race.round)?.Results?.[0];
-    return `<article class="race ${isUpcoming(race) ? 'upcoming' : ''}"><div class="card-top"><span class="round">ROUND ${String(race.round).padStart(2, '0')} · ${race.season}</span><span>${escapeHTML(dateLabel(race))}</span></div><h3>${flag(race.Circuit.Location.country)}${escapeHTML(race.raceName)}</h3>${circuits.raceCard(race)}<div class="winner"><small>${isUpcoming(race) ? 'PROCHAIN RENDEZ-VOUS' : winner ? 'VAINQUEUR' : 'RÉSULTATS'}</small>${winner ? driverIdentity(winner.Driver, winner.Constructor, race.season) : isUpcoming(race) ? 'À venir' : 'Consulter le détail de la course'}</div>${actions(race)}</article>`;
+    return `<article class="race ${isUpcoming(race) ? 'upcoming' : ''}"><div class="card-top"><span class="round">ROUND ${String(race.round).padStart(2, '0')} · ${race.season}</span><span>${escapeHTML(dateLabel(race))}</span></div><h3>${flag(race.Circuit.Location.country)}${escapeHTML(race.raceName)}</h3>${circuits.raceCard(race)}<div class="winner"><small>${isUpcoming(race) ? 'PROCHAIN RENDEZ-VOUS' : winner ? 'VAINQUEUR' : 'RÉSULTATS'}</small>${winner ? trophyIcon + driverIdentity(winner.Driver, winner.Constructor, race.season) : isUpcoming(race) ? 'À venir' : 'Consulter le détail de la course'}</div>${actions(race)}</article>`;
   }).join('')}</div>` : '<p class="empty">Aucune course ici. Change les filtres ou ajoute des courses à ta collection.</p>';
 }
 function standingsTable(items, constructors = false) {
@@ -77,12 +79,13 @@ function standingsTable(items, constructors = false) {
   const max = Math.max(1, ...items.map((item) => Number(item.points)));
   const filtered = items.filter((item) => `${constructors ? item.Constructor.name : fullName(item.Driver)} ${item.Constructors?.map((team) => team.name).join(' ') || ''}`.toLowerCase().includes(query));
   if (!filtered.length) return '<p class="empty">Aucun classement disponible pour cette sélection.</p>';
-  return `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>${constructors ? 'Écurie' : 'Pilote'}</th>${constructors ? '<th>Nationalité</th>' : '<th>Nationalité</th><th>Écurie</th>'}<th>Victoires</th><th>Points</th></tr></thead><tbody>${filtered.map((item) => `<tr style="--team-color:${teamColor(constructors ? item.Constructor : item.Constructors?.[0], state.year)}"><td>${escapeHTML(item.position)}</td><td><strong>${constructors ? teamIdentity(item.Constructor, state.year) : driverIdentity(item.Driver, item.Constructors?.[0], state.year, false)}</strong></td>${constructors ? '' : `<td>${flag(item.Driver.nationality)}</td>`}<td>${constructors ? `${flag(item.Constructor.nationality)} ${escapeHTML(item.Constructor.nationality)}` : `<span class="team-list">${(item.Constructors || []).map((team) => teamIdentity(team, state.year)).join('')}</span>`}</td><td>${escapeHTML(item.wins)}</td><td class="points"><strong>${escapeHTML(item.points)}</strong><span class="bar" style="width:${Number(item.points) / max * 100}%"></span></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>${constructors ? 'Écurie' : 'Pilote'}</th>${constructors ? '<th>Nationalité</th>' : '<th>Nationalité</th><th>Écurie</th>'}<th>Victoires</th><th>Points</th></tr></thead><tbody>${filtered.map((item) => `<tr style="--team-color:${teamColor(constructors ? item.Constructor : item.Constructors?.[0], state.year)}"><td>${Number(item.position) === 1 && state.year < CURRENT_YEAR ? trophyIcon : ''}${escapeHTML(item.position)}</td><td><strong>${constructors ? teamIdentity(item.Constructor, state.year) : driverIdentity(item.Driver, item.Constructors?.[0], state.year, false)}</strong></td>${constructors ? '' : `<td>${flag(item.Driver.nationality)}</td>`}<td>${constructors ? `${flag(item.Constructor.nationality)} ${escapeHTML(item.Constructor.nationality)}` : `<span class="team-list">${(item.Constructors || []).map((team) => teamIdentity(team, state.year)).join('')}</span>`}</td><td>${escapeHTML(item.wins)}</td><td class="points"><strong>${escapeHTML(item.points)}</strong><span class="bar" style="width:${Number(item.points) / max * 100}%"></span></td></tr>`).join('')}</tbody></table></div>`;
 }
 function render() {
   const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], calendar: ['LA SAISON EN UN COUP D’ŒIL', `Calendrier ${state.year}`], circuits: ['LES TRACÉS DE LA FORMULE 1', 'Circuits & records'], profile: ['TON ESPACE PERSONNEL', 'Mon profil'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
   $('#section-label').textContent = titles[state.view][0]; $('#section-title').textContent = titles[state.view][1];
   document.body.classList.toggle('profile-view', state.view === 'profile');
+  $('.profile-nav').setAttribute('aria-current', state.view === 'profile' ? 'page' : 'false');
   $('.filters').hidden = state.view === 'profile';
   $('#filter').hidden = !['races', 'collection', 'calendar'].includes(state.view);
   $('#tabs').querySelectorAll('button').forEach((button) => { if (button.dataset.view === state.view) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
@@ -117,14 +120,22 @@ async function showSession(race, session, token) {
     if (token !== state.detailGeneration) return;
     const record = data.RaceTable?.Races?.[0];
     const rows = record?.[session === 'qualifying' ? 'QualifyingResults' : session === 'sprint' ? 'SprintResults' : 'Results'] || [];
-    $('#session-results').innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilote</th><th>Écurie</th>${session === 'qualifying' ? '<th>Q1</th><th>Q2</th><th>Q3</th>' : '<th>Grille</th><th>Tours</th><th>Temps / statut</th><th>Points</th>'}</tr></thead><tbody>${rows.map((row) => `<tr><td>${escapeHTML(row.position)}</td><td>${driverIdentity(row.Driver, row.Constructor, race.season)}</td><td>${teamIdentity(row.Constructor, race.season)}</td>${session === 'qualifying' ? ['Q1','Q2','Q3'].map((key) => `<td>${escapeHTML(row[key] || '—')}</td>`).join('') : `<td>${escapeHTML(row.grid)}</td><td>${escapeHTML(row.laps)}</td><td>${escapeHTML(row.Time?.time || row.status)}</td><td>${escapeHTML(row.points)}</td>`}</tr>`).join('')}</tbody></table></div>` : '<p class="empty">Aucune donnée publiée pour cette session. Les archives anciennes ne couvrent pas toutes les qualifications.</p>';
+    $('#session-results').innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilote</th><th>Écurie</th>${session === 'qualifying' ? '<th>Q1</th><th>Q2</th><th>Q3</th>' : '<th>Grille</th><th>Tours</th><th>Temps / statut</th><th>Points</th>'}</tr></thead><tbody>${rows.map((row) => `<tr><td>${Number(row.position) === 1 && session !== 'qualifying' ? trophyIcon : ''}${escapeHTML(row.position)}</td><td>${driverIdentity(row.Driver, row.Constructor, race.season)}</td><td>${teamIdentity(row.Constructor, race.season)}</td>${session === 'qualifying' ? ['Q1','Q2','Q3'].map((key) => `<td>${escapeHTML(row[key] || '—')}</td>`).join('') : `<td>${escapeHTML(row.grid)}</td><td>${escapeHTML(row.laps)}</td><td>${escapeHTML(row.Time?.time || row.status)}</td><td>${escapeHTML(row.points)}</td>`}</tr>`).join('')}</tbody></table></div>` : '<p class="empty">Aucune donnée publiée pour cette session. Les archives anciennes ne couvrent pas toutes les qualifications.</p>';
   } catch (error) { if (token === state.detailGeneration) $('#session-results').innerHTML = `<p class="empty">${escapeHTML(error.message)} <button data-session="${session}">Réessayer</button></p>`; }
 }
 let selectedRace;
 function openRace(race) {
   selectedRace = race; const token = ++state.detailGeneration;
-  $('#race-detail').innerHTML = `<p class="eyebrow">SAISON ${race.season} · ROUND ${race.round}</p><h2 id="race-title">${flag(race.Circuit.Location.country)}${escapeHTML(race.raceName)}</h2><p class="detail-meta">${escapeHTML(race.Circuit.circuitName)} · ${escapeHTML(race.Circuit.Location.locality)}, ${escapeHTML(race.Circuit.Location.country)}<br>${escapeHTML(dateLabel(race))}${race.time ? ` · ${escapeHTML(new Date(`${race.date}T${race.time}`).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}))}` : ''}<br><a href="${safeURL(race.Circuit.url)}" target="_blank" rel="noopener noreferrer">Découvrir le circuit ↗</a> · <a href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(race.Circuit.Location.lat)}&mlon=${encodeURIComponent(race.Circuit.Location.long)}#map=14/${encodeURIComponent(race.Circuit.Location.lat)}/${encodeURIComponent(race.Circuit.Location.long)}" target="_blank" rel="noopener noreferrer">Localiser ↗</a></p>${circuits.detailLink(race)}<div class="session-tabs"><button class="active" data-session="results">Course</button><button data-session="qualifying">Qualifications</button><button data-session="sprint">Sprint</button></div><div id="session-results"></div>`;
+  $('#race-detail').innerHTML = `<p class="eyebrow">SAISON ${race.season} · ROUND ${race.round}</p><h2 id="race-title">${flag(race.Circuit.Location.country)}${escapeHTML(race.raceName)}</h2><p class="detail-meta">${escapeHTML(race.Circuit.circuitName)} · ${escapeHTML(race.Circuit.Location.locality)}, ${escapeHTML(race.Circuit.Location.country)}<br>${escapeHTML(dateLabel(race))}${race.time ? ` · ${escapeHTML(new Date(`${race.date}T${race.time}`).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}))}` : ''}<br><a href="${safeURL(race.Circuit.url)}" target="_blank" rel="noopener noreferrer">Découvrir le circuit ↗</a> · <a href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(race.Circuit.Location.lat)}&mlon=${encodeURIComponent(race.Circuit.Location.long)}#map=14/${encodeURIComponent(race.Circuit.Location.lat)}/${encodeURIComponent(race.Circuit.Location.long)}" target="_blank" rel="noopener noreferrer">Localiser ↗</a></p>${circuits.detailLink(race)}<div class="session-tabs"><button class="active" data-session="results">Course</button><button data-session="qualifying">Qualifications</button><button data-session="sprint" disabled title="Vérification des données Sprint…">Sprint</button></div><div id="session-results"></div>`;
   if (!dialog.open) dialog.showModal(); showSession(race, 'results', token);
+  const sprintButton = $('#race-detail [data-session="sprint"]');
+  if (Number(race.season) < 2021) { sprintButton.title = 'Pas de Sprint pour ce Grand Prix'; return; }
+  request(`${race.season}/${race.round}/sprint/`).then(data => {
+    if (selectedRace !== race || !sprintButton.isConnected) return;
+    const available = Boolean(data.RaceTable?.Races?.[0]?.SprintResults?.length);
+    sprintButton.disabled = !available;
+    sprintButton.title = available ? 'Résultats du Sprint' : 'Aucune donnée Sprint publiée pour ce Grand Prix';
+  }).catch(() => { if (sprintButton.isConnected) sprintButton.title = 'Données Sprint indisponibles'; });
 }
 $('#season').innerHTML = Array.from({ length: CURRENT_YEAR - 1949 }, (_, index) => `<option>${CURRENT_YEAR - index}</option>`).join('');
 $('#season').addEventListener('change', (event) => { state.year = Number(event.target.value); loadSeason(); });
@@ -141,15 +152,16 @@ $('#results').addEventListener('click', (event) => {
   if (button.dataset.detail) openRace(race); else { preferences.toggle(key, button.dataset.field, race); render(); }
 });
 $('#race-detail').addEventListener('click', (event) => {
-  const session = event.target.closest('[data-session]')?.dataset.session; if (!session) return;
+  const target = event.target.closest('[data-session]'); const session = target?.dataset.session; if (!session || target.disabled) return;
   $('#race-detail').querySelectorAll('.session-tabs button').forEach((button) => button.classList.toggle('active', button.dataset.session === session));
   showSession(selectedRace, session, ++state.detailGeneration);
 });
 $('#close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('close', () => { state.detailGeneration++; });
 dialog.addEventListener('click', (event) => { if (event.target === dialog) { const box = dialog.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close(); } });
+enableTableSorting();
 loadSeason();
 
-function navigateProfile() { if (location.hash === '#profil') { state.view = 'profile'; render(); } else if (state.view === 'profile') { state.view = 'races'; render(); } }
+function navigateProfile() { if (location.hash === '#profil') { state.view = 'profile'; render(); window.scrollTo({top:0,behavior:'instant'}); } else if (state.view === 'profile') { state.view = 'races'; render(); } }
 window.addEventListener('hashchange', navigateProfile);
 navigateProfile();
