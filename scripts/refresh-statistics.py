@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import urllib.request
 import zipfile
+from refresh_circuits import generate_circuits
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -15,7 +16,7 @@ def download(url):
         return response.read()
 
 
-def generate(release, archive):
+def generate(release, archive, svg_archive=None):
     def read(name):
         return json.loads(archive.read(f"f1db-{name}.json"))
     countries = {row['id']: row for row in read('countries')}
@@ -44,6 +45,9 @@ def generate(release, archive):
     destination = ROOT / 'data' / 'statistics.json.gz'
     destination.parent.mkdir(exist_ok=True)
     destination.write_bytes(gzip.compress(json.dumps(snapshot, ensure_ascii=False, separators=(',', ':')).encode(), mtime=0))
+    if svg_archive is None:
+        svg_archive = zipfile.ZipFile(io.BytesIO(download("https://codeload.github.com/f1db/f1-circuits-svg/zip/refs/heads/main")))
+    generate_circuits(ROOT, read, svg_archive, release, last_race["date"])
     print(f"Statistics: {len(drivers)} drivers, {release['tag_name']}, through {last_race['date']}")
 
 if __name__ == '__main__':
