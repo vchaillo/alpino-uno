@@ -1,4 +1,4 @@
-import { renderFlag } from './flags.js';
+import { renderFlag } from './flags.js?v=12';
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function resolveCircuit(circuits, input) {
   if (typeof input === 'string') return circuits.find(circuit=>circuit.id === input);
