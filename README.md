@@ -41,9 +41,13 @@ The header's Profile link opens a demo profile with editable name, email and fav
 
 The hero uses an AI-generated transparent industrial side-profile car drawing, combined with a native SVG dial and HTML year digits. The odometer animation works for both season arrows and the select control, cancels interrupted rolls, and respects reduced-motion settings. The SVG needle follows the selected season's position within the archive range. It is a decorative season gauge, not a speed measurement.
 
-## Cockpit proposals
+## Cockpit navigation
 
-The homepage presents three interactive industrial-style SVG cockpits. Left/right paddles select the previous/next season, while the wheel display opens a searchable year dialog. All three wheel displays, the existing season select and the race data share one season state. Year digits retain the odometer animation and reduced-motion behavior. On mobile, the same navigation node moves below the season summary to avoid duplicated controls.
+A single detailed SVG cockpit uses mechanical controls, carbon hatching, a halo, fasteners and industrial annotations. The wheel display selects archive seasons rather than showing real telemetry. Click its screen for the searchable year picker, use the paddles for one-year changes, or scroll over the screen (up = next season, down = previous season). Wheel capture is local to the screen and rate-limited for trackpads. LEDs, rotary controls and screen highlights animate with the odometer and respect reduced motion. Mobile navigation remains below the season summary.
+
+## Tables and session availability
+
+All rendered tables offer keyboard-accessible column buttons with ascending/descending sorting and aria-sort indicators. Numbers, qualifying times and text are compared appropriately; unavailable values stay last and existing row actions remain attached. Sprint stays disabled until published SprintResults are found for that race, and is disabled for pre-2021 seasons. Yellow SVG trophies identify race/sprint winners and completed-season champions. Interface surfaces use square corners while team markers and mechanical drawings remain circular.
 
 ## Circuit archive
 
