@@ -1,8 +1,9 @@
+import { createViewLayout } from './view-layout.js';
 import { enableTableSorting } from './table-sort.js?v=16';
 import { trophyIcon } from './icons.js';
 import { renderFlag } from './flags.js?v=12';
 import { renderAnnualCalendar } from './calendar.js';
-import { createCircuits } from './circuits.js?v=12';
+import { createCircuits } from './circuits.js?v=17';
 import { createCockpits } from './cockpit.js?v=14';
 import { createProfile } from './profile.js?v=14';
 import { createStatistics } from './statistics.js?v=12';
@@ -24,7 +25,9 @@ function driverIdentity(driver, team, season, showFlag = true) {
 const storageKey = 'formula-one:collection:v1';
 let collection = {};
 try { const stored = JSON.parse(localStorage.getItem(storageKey) || '{}'); if (stored && typeof stored === 'object' && !Array.isArray(stored)) collection = stored; } catch {}
-const state = { year: CURRENT_YEAR, view: 'races', races: [], drivers: [], constructors: [], winners: [], generation: 0, detailGeneration: 0 };
+const layouts = createViewLayout();
+let renderedView = null;
+const state = { loading: true, year: CURRENT_YEAR, view: 'races', races: [], drivers: [], constructors: [], winners: [], generation: 0, detailGeneration: 0 };
 const requestCache = new Map();
 // Keep persistence behind a small adapter for a future Firebase implementation.
 const preferences = {
@@ -69,10 +72,31 @@ function actions(race) {
 }
 function renderRaces() {
   const races = state.view === 'collection' ? Object.values(collection).filter((item) => item.race && (item.favorite || item.watched || item.watchlist)).map((item) => item.race).sort((a,b) => b.date.localeCompare(a.date)).filter(matches) : state.races.filter(matches);
+  if (layouts.get(state.view) === 'list') { $('#results').innerHTML = raceList(races); return; }
   $('#results').innerHTML = races.length ? `<div class="grid">${races.map((race) => {
     const winner = state.view === 'collection' ? null : state.winners.find((item) => item.round === race.round)?.Results?.[0];
     return `<article class="race ${isUpcoming(race) ? 'upcoming' : ''}"><div class="card-top"><span class="round">ROUND ${String(race.round).padStart(2, '0')} · ${race.season}</span><span>${escapeHTML(dateLabel(race))}</span></div><h3>${flag(race.Circuit.Location.country)}${escapeHTML(race.raceName)}</h3>${circuits.raceCard(race)}<div class="winner"><small>${isUpcoming(race) ? 'PROCHAIN RENDEZ-VOUS' : winner ? 'VAINQUEUR' : 'RÉSULTATS'}</small>${winner ? trophyIcon + driverIdentity(winner.Driver, winner.Constructor, race.season) : isUpcoming(race) ? 'À venir' : 'Consulter le détail de la course'}</div>${actions(race)}</article>`;
   }).join('')}</div>` : '<p class="empty">Aucune course ici. Change les filtres ou ajoute des courses à ta collection.</p>';
+}
+function raceList(races) {
+  if (!races.length) return '<p class="empty">Aucune course ici. Change les filtres ou ajoute des courses à ta collection.</p>';
+  return `<div class="table-wrap race-list"><table><thead><tr><th>Saison / round</th><th>Date</th><th>Grand Prix</th><th>Circuit</th><th>Pays</th><th>Vainqueur</th><th>Actions</th></tr></thead><tbody>${races.map(race=>{
+    const winner = state.view === 'collection' ? null : state.winners.find(item=>item.round===race.round)?.Results?.[0];
+    return `<tr><td data-sort-value="${race.season}-${String(race.round).padStart(2,'0')}">${race.season} · ${race.round}</td><td data-sort-value="${race.date}">${escapeHTML(dateLabel(race))}</td><td><strong>${escapeHTML(race.raceName)}</strong></td><td><span>${escapeHTML(race.Circuit.circuitName)}</span>${circuits.detailLink(race)}</td><td>${flag(race.Circuit.Location.country)} ${escapeHTML(race.Circuit.Location.country)}</td><td>${winner ? trophyIcon+driverIdentity(winner.Driver,winner.Constructor,race.season) : isUpcoming(race)?'À venir':'Consulter les résultats'}</td><td>${actions(race)}</td></tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+function renderLoading() {
+  const root = $('#results');
+  if (renderedView !== state.view || !root.children.length) {
+    if (['drivers','constructors'].includes(state.view) || layouts.get(state.view) === 'list' && state.view === 'races') {
+      const headers = state.view === 'races' ? ['Saison / round','Date','Grand Prix','Circuit','Pays','Vainqueur','Actions'] : state.view === 'constructors' ? ['Pos.','Écurie','Nationalité','Victoires','Points'] : ['Pos.','Pilote','Nationalité','Écurie','Victoires','Points'];
+      const count = state.view === 'drivers' ? state.drivers.length || 20 : state.view === 'constructors' ? state.constructors.length || 10 : state.races.length || 6;
+      root.innerHTML = `<div class="table-wrap"><table><thead><tr>${headers.map(label=>`<th>${label}</th>`).join('')}</tr></thead><tbody>${Array.from({length:count},()=>`<tr>${headers.map(()=>'<td><span class="skeleton-line">Chargement</span></td>').join('')}</tr>`).join('')}</tbody></table></div>`;
+    } else if (state.view === 'calendar') root.innerHTML = renderAnnualCalendar({year:state.year,races:[],escapeHTML,renderFlag});
+    else root.innerHTML = `<div class="grid">${Array.from({length:state.races.length||6},()=>'<article class="race skeleton-card"><div>Chargement du Grand Prix</div></article>').join('')}</div>`;
+    renderedView = state.view;
+  }
+  root.classList.add('loading-placeholders');root.setAttribute('aria-busy','true');root.setAttribute('aria-hidden','true');root.inert = true;
 }
 function standingsTable(items, constructors = false) {
   const query = $('#search').value.toLowerCase();
@@ -87,9 +111,13 @@ function render() {
   document.body.classList.toggle('profile-view', state.view === 'profile');
   $('.profile-nav').setAttribute('aria-current', state.view === 'profile' ? 'page' : 'false');
   $('.filters').hidden = state.view === 'profile';
+  $('#layout-controls').innerHTML = layouts.controls(state.view);
   $('#filter').hidden = !['races', 'collection', 'calendar'].includes(state.view);
   $('#tabs').querySelectorAll('button').forEach((button) => { if (button.dataset.view === state.view) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
+  if (state.loading && ['races','drivers','constructors','calendar'].includes(state.view)) { renderLoading(); return; }
+  $('#results').classList.remove('loading-placeholders'); $('#results').removeAttribute('aria-hidden'); $('#results').inert = false;
   if (state.view === 'calendar') $('#results').innerHTML = renderAnnualCalendar({year:state.year,races:state.races.filter(matches),escapeHTML,renderFlag}); else if (state.view === 'circuits') circuits.render($('#search').value); else if (state.view === 'profile') profile.render(); else if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
+  renderedView = state.view;
   $('#results').setAttribute('aria-busy', 'false');
 }
 async function loadSeason() {
@@ -97,9 +125,12 @@ async function loadSeason() {
   cockpits.update(state.year); $('#season').value = state.year;
   $('#previous').disabled = state.year <= 1950; $('#next').disabled = state.year >= CURRENT_YEAR;
   $('#notice').textContent = 'Chargement de la saison…'; $('#results').setAttribute('aria-busy', 'true');
-  state.races = []; state.winners = []; state.drivers = []; state.constructors = []; $('#stats').innerHTML = ''; render(); $('#results').setAttribute('aria-busy', 'true');
+  state.loading = true;
+  if (!$('#stats').children.length) $('#stats').innerHTML = ['GRANDS PRIX','RÉSULTATS PUBLIÉS','PILOTES','ÉCURIES'].map(label=>`<div class="stat"><small>${label}</small><strong>Chargement</strong></div>`).join('');
+  $('#stats').classList.add('loading-stats');render();
   const outcomes = await Promise.allSettled([request(`${state.year}/`), request(`${state.year}/driverstandings/`), request(`${state.year}/constructorstandings/`), request(`${state.year}/results/1/`), circuits.load()]);
   if (generation !== state.generation) return;
+  state.loading = false; $('#stats').classList.remove('loading-stats');
   const data = outcomes.map((result) => result.status === 'fulfilled' ? result.value : null);
   state.races = data[0]?.RaceTable?.Races || []; state.drivers = data[1]?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || []; state.constructors = data[2]?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || []; state.winners = data[3]?.RaceTable?.Races || [];
   const completed = state.winners.length;
@@ -111,7 +142,7 @@ async function loadSeason() {
 const dialog = $('#race-dialog');
 const statistics = createStatistics({ $, escapeHTML, dialog, driverIdentity, state });
 const profile = createProfile({ $, escapeHTML });
-const circuits = createCircuits({ $, escapeHTML, state });
+const circuits = createCircuits({ $, escapeHTML, state, layouts });
 const cockpits = createCockpits({ initialYear: CURRENT_YEAR, onYearChange(year) { state.year = year; loadSeason(); } });
 async function showSession(race, session, token) {
   $('#session-results').innerHTML = '<p class="empty">Chargement…</p>';
@@ -142,6 +173,7 @@ $('#season').addEventListener('change', (event) => { state.year = Number(event.t
 $('#previous').addEventListener('click', () => { if (state.year > 1950) { state.year--; loadSeason(); } });
 $('#next').addEventListener('click', () => { if (state.year < CURRENT_YEAR) { state.year++; loadSeason(); } });
 $('#tabs').addEventListener('click', (event) => { const view = event.target.closest('[data-view]')?.dataset.view; if (view) { state.view = view; render(); } });
+$('#layout-controls').addEventListener('click',event=>{ const layout = event.target.closest('[data-layout]')?.dataset.layout; if (!layout) return; layouts.set(state.view,layout); renderedView = null; render(); });
 $('#search').addEventListener('input', render); $('#filter').addEventListener('change', render);
 $('#results').addEventListener('click', (event) => {
   const button = event.target.closest('button'); if (!button) return;

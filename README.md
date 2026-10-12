@@ -58,3 +58,9 @@ Circuit opening dates are shown only where verified from the circuit's official 
 ## Annual calendar and flags
 
 The Calendar tab shows all twelve months, Monday-first, with race dates and accessible links opening race details. It follows the selected season and supports existing search/filters. Calendar placement uses each published race date. Country flags use bundled flag-icons SVG assets (MIT) rather than emoji fonts. Legacy storage keys are preserved so existing personal data remains available on the same GitHub Pages origin after the repository rename.
+
+## Layouts, loading and circuit world map
+
+Grand Prix, collection and circuit directory views offer gallery/list buttons with independent local preferences. Lists preserve race actions and circuit profiles, and reuse accessible table sorting. Season changes keep the previous card/row geometry as neutral placeholders until the matching request generation finishes; placeholder results are inert and hidden from assistive technology while the status announces loading. Independent collection, statistics and circuit views remain usable.
+
+The circuit directory begins with an equirectangular SVG world map using real F1DB coordinates. Nearby circuits are clustered; selecting a cluster zooms and lists its members. Map controls, dragging and keyboard arrows move the viewport; points and cluster members open the existing circuit profiles. Search filters both the directory and the map. The bundled world outline is adapted from Natural Earth 1:110m country geometries (public domain): https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson. No external map tiles, API key or map tracking are required.
