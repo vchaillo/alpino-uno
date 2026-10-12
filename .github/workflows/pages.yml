@@ -21,14 +21,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check JavaScript syntax
-        run: node --check app.js && node --check branding.js && node --check statistics.js && node --check profile.js && node --check season-display.js && node --check cockpit.js && node --check circuits.js && node --check calendar.js && node --check flags.js && node --check table-sort.js && node --check icons.js
+        run: node --check app.js && node --check branding.js && node --check statistics.js && node --check profile.js && node --check season-display.js && node --check cockpit.js && node --check circuits.js && node --check calendar.js && node --check flags.js && node --check table-sort.js && node --check icons.js && node --check view-layout.js && node --check world-map.js
       - name: Refresh career statistics
         run: python3 scripts/refresh-statistics.py
       - uses: actions/configure-pages@v5
       - name: Prepare public files
         run: |
           mkdir -p dist
-          cp index.html app.js branding.js statistics.js profile.js season-display.js cockpit.js circuits.js calendar.js flags.js table-sort.js icons.js styles.css favicon.svg dist/
+          cp index.html app.js branding.js statistics.js profile.js season-display.js cockpit.js circuits.js calendar.js flags.js table-sort.js icons.js view-layout.js world-map.js styles.css favicon.svg dist/
           cp -r data assets dist/
           touch dist/.nojekyll
       - uses: actions/upload-pages-artifact@v3

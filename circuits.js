@@ -1,3 +1,4 @@
+import { createWorldMap } from './world-map.js';
 import { renderFlag } from './flags.js?v=12';
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function resolveCircuit(circuits, input) {
@@ -17,10 +18,11 @@ const OPENING_HISTORY = {
   'spa-francorchamps':{year:1921,url:'https://www.spa-francorchamps.be/fr/le-plus-beau-circuit-du-monde'},
   monza:{year:1922,url:'https://www.monzanet.it/en/autodrome/'}
 };
-export function createCircuits({ $, escapeHTML, state }) {
+export function createCircuits({ $, escapeHTML, state, layouts }) {
   let snapshot, pending, profileGeneration = 0;
   const modal = $('#circuit-dialog');
   const flag = renderFlag;
+  const worldMap = createWorldMap({escapeHTML});
   async function load() {
     if (snapshot) return snapshot;
     if (!pending) pending = fetch('./data/circuits.json.gz').then(response=>{if(!response.ok)throw Error('Les fiches circuits sont indisponibles.');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}).then(data=>{snapshot=data;return data;}).catch(error=>{pending=null;throw error;});
@@ -49,7 +51,11 @@ export function createCircuits({ $, escapeHTML, state }) {
   function render(query='') {
     if (!snapshot) { $('#results').innerHTML = '<p class="empty">Chargement des circuits…</p>'; load().then(()=>{if(state.view==='circuits')render($('#search').value);}).catch(error=>{if(state.view==='circuits')$('#results').innerHTML=`<p class="empty">${escapeHTML(error.message)}</p>`;});return; }
     const records = snapshot.circuits.filter(record=>normalize(`${record.fullName} ${record.name} ${record.placeName} ${record.country}`).includes(normalize(query))).sort((a,b)=>b.raceCount-a.raceCount || a.name.localeCompare(b.name));
-    $('#results').innerHTML = `<p class="statistics-source">${records.length} circuit${records.length > 1 ? 's' : ''} · statistiques jusqu’au ${new Date(snapshot.through+'T12:00:00Z').toLocaleDateString('fr-FR')} · les fiches couvrent toutes les saisons.</p><div class="grid circuit-grid">${records.map(record=>`<article class="race circuit-directory-card"><button class="circuit-open" data-circuit="${record.id}">${drawing(record,layoutFor(record))}<h3>${flag(record.countryCode)} ${escapeHTML(record.fullName)}</h3><p>${escapeHTML(record.placeName)} · ${escapeHTML(record.country)}</p><div class="circuit-card-stats"><span><strong>${record.raceCount}</strong><small>Grands Prix disputés</small></span><span><strong>${record.firstF1 || '—'}</strong><small>Première épreuve F1</small></span></div><span class="circuit-link-hint">Explorer le circuit <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></span></button></article>`).join('')}</div><p class="statistics-source">Données : <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB</a> · Tracés : <a href="https://github.com/f1db/f1-circuits-svg" target="_blank" rel="noopener">Jules Roy / F1DB</a>, CC BY 4.0, couleurs adaptées.</p>`;
+    const gallery = `<p class="statistics-source">${records.length} circuit${records.length > 1 ? 's' : ''} · statistiques jusqu’au ${new Date(snapshot.through+'T12:00:00Z').toLocaleDateString('fr-FR')} · les fiches couvrent toutes les saisons.</p><div class="grid circuit-grid">${records.map(record=>`<article class="race circuit-directory-card"><button class="circuit-open" data-circuit="${record.id}">${drawing(record,layoutFor(record))}<h3>${flag(record.countryCode)} ${escapeHTML(record.fullName)}</h3><p>${escapeHTML(record.placeName)} · ${escapeHTML(record.country)}</p><div class="circuit-card-stats"><span><strong>${record.raceCount}</strong><small>Grands Prix disputés</small></span><span><strong>${record.firstF1 || '—'}</strong><small>Première épreuve F1</small></span></div><span class="circuit-link-hint">Explorer le circuit <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></span></button></article>`).join('')}</div><p class="statistics-source">Données : <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB</a> · Tracés : <a href="https://github.com/f1db/f1-circuits-svg" target="_blank" rel="noopener">Jules Roy / F1DB</a>, CC BY 4.0, couleurs adaptées.</p>`;
+    const list = `<div class="table-wrap circuit-list"><table><thead><tr><th>Circuit</th><th>Pays</th><th>Ville</th><th>Grands Prix</th><th>Première épreuve F1</th><th>Dernière épreuve F1</th><th>Fiche</th></tr></thead><tbody>${records.map(record=>`<tr><td><strong>${escapeHTML(record.fullName)}</strong></td><td>${flag(record.countryCode)} ${escapeHTML(record.country)}</td><td>${escapeHTML(record.placeName)}</td><td>${record.raceCount}</td><td>${record.firstF1||'—'}</td><td>${record.lastF1||'—'}</td><td><button class="list-explore" data-circuit="${escapeHTML(record.id)}">Explorer <span aria-hidden="true">↗</span></button></td></tr>`).join('')}</tbody></table></div>`;
+    $('#results').innerHTML = `<section class="world-map-panel" id="world-map-panel" aria-label="Carte du monde des circuits"></section><div class="directory-heading"><h3>Explorer les circuits</h3><span>${records.length} circuits</span></div>${records.length ? layouts.get('circuits') === 'list' ? list : gallery : '<p class="empty">Aucun circuit ne correspond à cette recherche.</p>'}`;
+    worldMap.mount($('#world-map-panel'),records);
+
   }
   async function open(input, race) {
     const token=++profileGeneration;
