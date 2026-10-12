@@ -1,4 +1,4 @@
-import { enableTableSorting } from './table-sort.js';
+import { enableTableSorting } from './table-sort.js?v=16';
 import { trophyIcon } from './icons.js';
 import { renderFlag } from './flags.js?v=12';
 import { renderAnnualCalendar } from './calendar.js';
