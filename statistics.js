@@ -57,7 +57,7 @@ export function createStatistics({ $, escapeHTML, dialog, driverIdentity, state 
       await load();
       if (token !== generation || !dialog.open) return;
       const exact = snapshot.drivers.find((driver) => id ? driver.id === id : normalize(driver.name) === normalize(name));
-      const candidates = snapshot.drivers.filter((driver) => name && normalize(name).endsWith(normalize(driver.lastName)) && normalize(name).startsWith(normalize(driver.firstName.split(' ')[0])));
+      const candidates = snapshot.drivers.filter((driver) => name && normalize(name).endsWith(normalize(driver.lastName.replace(/\s+Jr\.?$/i, ''))) && normalize(name).includes(normalize(driver.firstName.split(' ')[0])));
       const driver = exact || (candidates.length === 1 ? candidates[0] : null);
       if (!driver) { $('#race-detail').innerHTML = '<h2 id="race-title">Fiche indisponible</h2><p>Ce pilote n’a pas encore été identifié dans les archives de statistiques.</p>'; return; }
       const seasons = [...driver.seasons].sort((a,b) => b.year-a.year);
