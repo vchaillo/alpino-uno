@@ -1,4 +1,4 @@
-import { createCircuits } from './circuits.js?v=8';
+import { createCircuits } from './circuits.js?v=9';
 import { createCockpits } from './cockpit.js?v=7';
 import { createProfile } from './profile.js';
 import { createStatistics } from './statistics.js?v=5';
