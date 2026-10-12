@@ -1,3 +1,4 @@
+import { renderFlag } from './flags.js';
 const METRICS = {
   totalChampionshipWins: ['Titres mondiaux', 'Championnats pilotes remportés. La saison en cours compte uniquement si le titre a déjà été attribué par la source.'],
   totalRaceWins: ['Victoires en Grand Prix', 'Victoires en course principale, hors sprints.'],
@@ -15,7 +16,7 @@ const normalize = (value) => String(value).normalize('NFD').replace(/[\u0300-\u0
 export function createStatistics({ $, escapeHTML, dialog, driverIdentity, state }) {
   let snapshot, pending, generation = 0;
   let metric = 'totalChampionshipWins', period = 'all', showAll = false;
-  const countryFlag = (driver) => `<span class="flag" role="img" aria-label="${escapeHTML(driver.country)}">${String.fromCodePoint(...[...driver.countryCode].map((letter) => 127397 + letter.charCodeAt(0)))}</span>`;
+  const countryFlag = driver => renderFlag(driver.countryCode, driver.country);
   const driverLink = (driver) => `<button class="driver-link" data-driver-id="${escapeHTML(driver.id)}">${countryFlag(driver)}<span>${escapeHTML(driver.name)}</span><span class="profile-arrow" aria-hidden="true">↗</span></button>`;
   async function load() {
     if (snapshot) return snapshot;

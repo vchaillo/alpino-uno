@@ -1,3 +1,4 @@
+import { renderFlag } from './flags.js';
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function resolveCircuit(circuits, input) {
   if (typeof input === 'string') return circuits.find(circuit=>circuit.id === input);
@@ -19,7 +20,7 @@ const OPENING_HISTORY = {
 export function createCircuits({ $, escapeHTML, state }) {
   let snapshot, pending, profileGeneration = 0;
   const modal = $('#circuit-dialog');
-  const flag = code => `<span class="flag" aria-hidden="true">${String.fromCodePoint(...[...code].map(letter=>127397+letter.charCodeAt(0)))}</span>`;
+  const flag = renderFlag;
   async function load() {
     if (snapshot) return snapshot;
     if (!pending) pending = fetch('./data/circuits.json.gz').then(response=>{if(!response.ok)throw Error('Les fiches circuits sont indisponibles.');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}).then(data=>{snapshot=data;return data;}).catch(error=>{pending=null;throw error;});

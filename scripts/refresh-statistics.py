@@ -11,7 +11,7 @@ from refresh_circuits import generate_circuits
 ROOT = Path(__file__).resolve().parents[1]
 
 def download(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "FormulaOne/1.1 (github.com/vchaillo/formula-one)"})
+    request = urllib.request.Request(url, headers={"User-Agent": "CalpinoUno/1.1 (github.com/vchaillo/calpino-uno)"})
     with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 
