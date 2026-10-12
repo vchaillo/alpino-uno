@@ -40,3 +40,7 @@ The header's Profile link opens a demo profile with editable name, email and fav
 ## Hero instrument
 
 The hero uses an AI-generated transparent industrial side-profile car drawing, combined with a native SVG dial and HTML year digits. The odometer animation works for both season arrows and the select control, cancels interrupted rolls, and respects reduced-motion settings. The SVG needle follows the selected season's position within the archive range. It is a decorative season gauge, not a speed measurement.
+
+## Cockpit proposals
+
+The homepage presents three interactive industrial-style SVG cockpits. Left/right paddles select the previous/next season, while the wheel display opens a searchable year dialog. All three wheel displays, the existing season select and the race data share one season state. Year digits retain the odometer animation and reduced-motion behavior. On mobile, the same navigation node moves below the season summary to avoid duplicated controls.
