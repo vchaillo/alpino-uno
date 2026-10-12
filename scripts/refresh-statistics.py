@@ -37,7 +37,25 @@ def generate(release, archive, svg_archive=None):
             **{key: driver.get(key) for key in metrics},
             'seasons': [{ 'year': row['year'], 'position': row['positionNumber'], **{key: row.get(key) for key in metrics if key != 'totalChampionshipWins'} } for row in rows]
         })
-    snapshot = {'source': 'F1DB', 'license': 'CC BY 4.0', 'version': release['tag_name'], 'publishedAt': release['published_at'], 'generatedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'through': last_race['date'], 'drivers': drivers}
+    final_standings = read('seasons-driver-standings')
+    race_standings = read('races-driver-standings')
+    race_index = {row['id']: row for row in read('races')}
+    grand_prix = {row['id']: row for row in read('grands-prix')}
+    champions = []
+    for winner in final_standings:
+        # championshipWon is an explicit source field, not an inferred clinching date.
+        if not winner.get('championshipWon') or winner['positionNumber'] != 1:
+            continue
+        year = winner['year']
+        runner_up = next((row for row in final_standings if row['year'] == year and row['positionNumber'] == 2), None)
+        season = next(row for row in seasons if row['year'] == year and row['driverId'] == winner['driverId'])
+        clinched = sorted((row for row in race_standings if row['year'] == year and row['driverId'] == winner['driverId'] and row.get('championshipWon')), key=lambda row: row['round'])
+        race = race_index.get(clinched[0]['raceId']) if clinched else None
+        champions.append({'year': year, 'driverId': winner['driverId'], 'points': winner['points'],
+            'margin': round(winner['points'] - runner_up['points'], 3) if runner_up else None,
+            'wins': season['totalRaceWins'],
+            'clincher': {'name': grand_prix[race['grandPrixId']]['fullName'], 'round': race['round'], 'date': race['date']} if race else None})
+    snapshot = {'source': 'F1DB', 'license': 'CC BY 4.0', 'version': release['tag_name'], 'publishedAt': release['published_at'], 'generatedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'through': last_race['date'], 'drivers': drivers, 'champions': champions}
     assert len(drivers) > 800, 'Incomplete driver directory'
     hamilton = next(row for row in drivers if row['id'] == 'lewis-hamilton')
     assert hamilton['totalChampionshipWins'] == 7 and hamilton['totalRaceWins'] >= 105

@@ -4,9 +4,9 @@ import { trophyIcon } from './icons.js';
 import { renderFlag } from './flags.js?v=12';
 import { renderAnnualCalendar } from './calendar.js';
 import { createCircuits } from './circuits.js?v=17';
-import { createCockpits } from './cockpit.js?v=14';
-import { createProfile } from './profile.js?v=14';
-import { createStatistics } from './statistics.js?v=12';
+import { createCockpits } from './cockpit.js?v=18';
+import { createProfile } from './profile.js?v=18';
+import { createStatistics } from './statistics.js?v=18';
 import { teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
@@ -106,17 +106,17 @@ function standingsTable(items, constructors = false) {
   return `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>${constructors ? 'Écurie' : 'Pilote'}</th>${constructors ? '<th>Nationalité</th>' : '<th>Nationalité</th><th>Écurie</th>'}<th>Victoires</th><th>Points</th></tr></thead><tbody>${filtered.map((item) => `<tr style="--team-color:${teamColor(constructors ? item.Constructor : item.Constructors?.[0], state.year)}"><td>${Number(item.position) === 1 && state.year < CURRENT_YEAR ? trophyIcon : ''}${escapeHTML(item.position)}</td><td><strong>${constructors ? teamIdentity(item.Constructor, state.year) : driverIdentity(item.Driver, item.Constructors?.[0], state.year, false)}</strong></td>${constructors ? '' : `<td>${flag(item.Driver.nationality)}</td>`}<td>${constructors ? `${flag(item.Constructor.nationality)} ${escapeHTML(item.Constructor.nationality)}` : `<span class="team-list">${(item.Constructors || []).map((team) => teamIdentity(team, state.year)).join('')}</span>`}</td><td>${escapeHTML(item.wins)}</td><td class="points"><strong>${escapeHTML(item.points)}</strong><span class="bar" style="width:${Number(item.points) / max * 100}%"></span></td></tr>`).join('')}</tbody></table></div>`;
 }
 function render() {
-  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], calendar: ['LA SAISON EN UN COUP D’ŒIL', `Calendrier ${state.year}`], circuits: ['LES TRACÉS DE LA FORMULE 1', 'Circuits & records'], profile: ['TON ESPACE PERSONNEL', 'Mon profil'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
+  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], calendar: ['LA SAISON EN UN COUP D’ŒIL', `Calendrier ${state.year}`], circuits: ['LES TRACÉS DE LA FORMULE 1', 'Circuits & records'], login: ['BIENVENUE DANS LE PADDOCK', 'Connexion'], profile: ['TON ESPACE PERSONNEL', 'Mon profil'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
   $('#section-label').textContent = titles[state.view][0]; $('#section-title').textContent = titles[state.view][1];
-  document.body.classList.toggle('profile-view', state.view === 'profile');
-  $('.profile-nav').setAttribute('aria-current', state.view === 'profile' ? 'page' : 'false');
-  $('.filters').hidden = state.view === 'profile';
+  document.body.classList.toggle('profile-view', ['profile','login'].includes(state.view));
+  $('.profile-nav').setAttribute('aria-current', ['profile','login'].includes(state.view) ? 'page' : 'false');
+  $('.filters').hidden = ['profile','login'].includes(state.view);
   $('#layout-controls').innerHTML = layouts.controls(state.view);
   $('#filter').hidden = !['races', 'collection', 'calendar'].includes(state.view);
   $('#tabs').querySelectorAll('button').forEach((button) => { if (button.dataset.view === state.view) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
   if (state.loading && ['races','drivers','constructors','calendar'].includes(state.view)) { renderLoading(); return; }
   $('#results').classList.remove('loading-placeholders'); $('#results').removeAttribute('aria-hidden'); $('#results').inert = false;
-  if (state.view === 'calendar') $('#results').innerHTML = renderAnnualCalendar({year:state.year,races:state.races.filter(matches),escapeHTML,renderFlag}); else if (state.view === 'circuits') circuits.render($('#search').value); else if (state.view === 'profile') profile.render(); else if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
+  if (state.view === 'calendar') $('#results').innerHTML = renderAnnualCalendar({year:state.year,races:state.races.filter(matches),escapeHTML,renderFlag}); else if (state.view === 'circuits') circuits.render($('#search').value); else if (state.view === 'login') profile.renderLogin(); else if (state.view === 'profile') profile.render(); else if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
   renderedView = state.view;
   $('#results').setAttribute('aria-busy', 'false');
 }
@@ -127,14 +127,17 @@ async function loadSeason() {
   $('#notice').textContent = 'Chargement de la saison…'; $('#results').setAttribute('aria-busy', 'true');
   state.loading = true;
   if (!$('#stats').children.length) $('#stats').innerHTML = ['GRANDS PRIX','RÉSULTATS PUBLIÉS','PILOTES','ÉCURIES'].map(label=>`<div class="stat"><small>${label}</small><strong>Chargement</strong></div>`).join('');
-  $('#stats').classList.add('loading-stats');render();
+  $('#stats').classList.add('loading-stats'); $('#season-summary').classList.add('loading-stats'); $('#season-summary').inert=true;render();
   const outcomes = await Promise.allSettled([request(`${state.year}/`), request(`${state.year}/driverstandings/`), request(`${state.year}/constructorstandings/`), request(`${state.year}/results/1/`), circuits.load()]);
   if (generation !== state.generation) return;
-  state.loading = false; $('#stats').classList.remove('loading-stats');
+  state.loading = false; $('#stats').classList.remove('loading-stats'); $('#season-summary').classList.remove('loading-stats'); $('#season-summary').inert=false;
   const data = outcomes.map((result) => result.status === 'fulfilled' ? result.value : null);
   state.races = data[0]?.RaceTable?.Races || []; state.drivers = data[1]?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || []; state.constructors = data[2]?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || []; state.winners = data[3]?.RaceTable?.Races || [];
   const completed = state.winners.length;
-  $('#stats').innerHTML = [['GRANDS PRIX', state.races.length || '—'], ['RÉSULTATS PUBLIÉS', completed], [state.year === CURRENT_YEAR ? 'LEADER PILOTES' : 'CHAMPION PILOTES', fullName(state.drivers[0]?.Driver) || '—'], ['LEADER ÉCURIES', state.constructors[0]?.Constructor?.name || '—']].map(([label, value]) => `<div class="stat"><small>${label}</small><strong>${escapeHTML(value)}</strong></div>`).join('');
+  const nextRace = state.races.find(isUpcoming);
+  const leader = state.drivers[0];
+  $('#season-summary').innerHTML = `<button class="summary-next" ${nextRace ? `data-detail="${raceKey(nextRace)}"` : 'disabled'}><small>${nextRace ? 'PROCHAIN GRAND PRIX' : 'SAISON ARCHIVÉE'}</small><strong>${nextRace ? flag(nextRace.Circuit.Location.country) + escapeHTML(nextRace.raceName) : 'Saison ' + state.year}</strong><span>${nextRace ? escapeHTML(nextRace.Circuit.circuitName) + ' · ' + dateLabel(nextRace) : 'Explore les résultats et les classements'}</span></button><div class="summary-progress"><small>GRANDS PRIX · ${state.year}</small><strong>${completed}<em> / ${state.races.length || '—'}</em></strong><span>Résultats publiés</span><progress value="${completed}" max="${state.races.length || 1}"></progress></div><div class="summary-leader"><small>${state.year === CURRENT_YEAR ? 'LEADER PILOTES' : 'CHAMPION PILOTES'}</small><strong>${leader ? driverIdentity(leader.Driver,leader.Constructors?.[0],state.year) : '—'}</strong><span>${leader ? escapeHTML(leader.points) + ' points' : 'Classement indisponible'}</span></div>`;
+  $('#stats').innerHTML = '';
   const failure = outcomes.find((result) => result.status === 'rejected');
   $('#notice').innerHTML = failure ? `${escapeHTML(failure.reason.message)} <button id="retry">Réessayer</button>` : `Saison ${state.year} · dates affichées dans ton fuseau horaire · données Jolpica F1`;
   $('#retry')?.addEventListener('click', loadSeason); render();
@@ -175,6 +178,7 @@ $('#next').addEventListener('click', () => { if (state.year < CURRENT_YEAR) { st
 $('#tabs').addEventListener('click', (event) => { const view = event.target.closest('[data-view]')?.dataset.view; if (view) { state.view = view; render(); } });
 $('#layout-controls').addEventListener('click',event=>{ const layout = event.target.closest('[data-layout]')?.dataset.layout; if (!layout) return; layouts.set(state.view,layout); renderedView = null; render(); });
 $('#search').addEventListener('input', render); $('#filter').addEventListener('change', render);
+$('#season-summary').addEventListener('click',event=>{const key=event.target.closest('[data-detail]')?.dataset.detail;const race=state.races.find(item=>raceKey(item)===key);if(race && !state.loading)openRace(race);});
 $('#results').addEventListener('click', (event) => {
   const button = event.target.closest('button'); if (!button) return;
   if (button.dataset.calendarDate) { const race = state.races.find(item=>item.date === button.dataset.calendarDate); if (race) openRace(race); return; }
@@ -194,6 +198,9 @@ dialog.addEventListener('click', (event) => { if (event.target === dialog) { con
 enableTableSorting();
 loadSeason();
 
-function navigateProfile() { if (location.hash === '#profil') { state.view = 'profile'; render(); window.scrollTo({top:0,behavior:'instant'}); } else if (state.view === 'profile') { state.view = 'races'; render(); } }
+function navigateProfile() {
+  if (['#profil','#connexion'].includes(location.hash)) { state.view = location.hash === '#profil' ? 'profile' : 'login'; render(); window.scrollTo({top:0,behavior:'instant'}); }
+  else if (['profile','login'].includes(state.view)) { state.view = 'races'; render(); }
+}
 window.addEventListener('hashchange', navigateProfile);
 navigateProfile();

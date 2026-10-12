@@ -25,5 +25,21 @@ export function createProfile({ $, escapeHTML }) {
     });
     $('#reset-password').addEventListener('click', () => { $('#password-status').textContent = 'Simulation terminée : dans la version connectée, un lien de réinitialisation serait envoyé par e-mail. Aucun e-mail n’a été envoyé.'; });
   }
-  return { render };
+  const toggle = $('#account-menu-toggle');
+  const dropdown = $('#account-dropdown');
+  function closeMenu() { dropdown.hidden=true; toggle.setAttribute('aria-expanded','false'); }
+  toggle.addEventListener('click',()=>{dropdown.hidden=!dropdown.hidden;toggle.setAttribute('aria-expanded',String(!dropdown.hidden));});
+  document.addEventListener('click',event=>{if(!event.target.closest('.account-menu'))closeMenu();});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeMenu();toggle.focus();}});
+  function setTheme(theme) { document.documentElement.dataset.theme=theme; document.querySelectorAll('[data-theme]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.theme===theme)));try{localStorage.setItem('calpino:theme',theme);}catch{} }
+  let theme='dark';try{theme=localStorage.getItem('calpino:theme')||'dark';}catch{}setTheme(theme);
+  dropdown.addEventListener('click',event=>{const button=event.target.closest('[data-theme]');if(button)setTheme(button.dataset.theme);if(event.target.closest('a'))closeMenu();});
+  $('#sign-out').addEventListener('click',()=>{try{localStorage.removeItem('calpino:demo-session');}catch{}closeMenu();location.hash='connexion';});
+  function renderLogin() {
+    $('#results').innerHTML=`<section class="login-layout"><div class="login-art"><img src="assets/cockpit-v2.webp" alt="Cockpit de Formule 1 dessiné en noir et rouge"><div><p class="eyebrow">CALPINO UNO</p><h3>Chaque saison.<br>Chaque émotion.</h3><p>Les circuits, les champions et les courses qui ont écrit l’histoire.</p></div></div><div class="login-panel"><p class="eyebrow">TON ACCÈS AU PADDOCK</p><h3>Prends place.</h3><p>Retrouve tes favoris et ta collection de Grands Prix.</p><button id="google-demo" class="google-login"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22 12.2c0-.7-.1-1.5-.2-2.2H12v4h5.6c-.3 1.3-1 2.4-2.1 3.1v2.6h3.4C20.8 17.9 22 15.3 22 12.2Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.9-2.5l-3.4-2.6c-.9.6-2.1 1-3.5 1-2.7 0-5-1.8-5.8-4.2H2.7v2.7A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.2 13.7a6 6 0 0 1 0-3.4V7.6H2.7a10 10 0 0 0 0 8.8Z"/><path fill="#EA4335" d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 2.7 7.6l3.5 2.7C7 7.9 9.3 6.1 12 6.1Z"/></svg>Continuer avec Google · démo</button><div class="login-divider">OU</div><form id="login-form"><label for="login-name">Nom ou pseudonyme</label><input id="login-name" autocomplete="nickname" required maxlength="80" placeholder="Ton nom" value="${escapeHTML(profile.name)}"><label for="login-email">Adresse e-mail</label><input id="login-email" type="email" autocomplete="email" required placeholder="nom@exemple.fr" value="${escapeHTML(profile.email)}"><button class="primary-action">Entrer dans le paddock</button></form><p class="login-demo-note">Connexion de démonstration. Aucune authentification Google ni aucun mot de passe : Firebase sera connecté dans une prochaine étape.</p><a href="#">Explorer sans connexion →</a><p id="login-status" role="status"></p></div></section>`;
+    function connect(name,email) { profile.name=name;profile.email=email;save();updateHeader();try{localStorage.setItem('calpino:demo-session','true');}catch{}location.hash='profil'; }
+    $('#login-form').addEventListener('submit',event=>{event.preventDefault();connect($('#login-name').value.trim(),$('#login-email').value.trim());});
+    $('#google-demo').addEventListener('click',()=>connect(profile.name||'Pilote invité',profile.email||''));
+  }
+  return { render, renderLogin };
 }

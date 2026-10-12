@@ -64,3 +64,11 @@ The Calendar tab shows all twelve months, Monday-first, with race dates and acce
 Grand Prix, collection and circuit directory views offer gallery/list buttons with independent local preferences. Lists preserve race actions and circuit profiles, and reuse accessible table sorting. Season changes keep the previous card/row geometry as neutral placeholders until the matching request generation finishes; placeholder results are inert and hidden from assistive technology while the status announces loading. Independent collection, statistics and circuit views remain usable.
 
 The circuit directory begins with an equirectangular SVG world map using real F1DB coordinates. Nearby circuits are clustered; selecting a cluster zooms and lists its members. Map controls, dragging and keyboard arrows move the viewport; points and cluster members open the existing circuit profiles. Search filters both the directory and the map. The bundled world outline is adapted from Natural Earth 1:110m country geometries (public domain): https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_admin_0_countries.geojson. No external map tiles, API key or map tracking are required.
+
+### Champions timeline and account preview
+
+World champion entries use F1DB's explicit `championshipWon` field. Championship points and the margin to the runner-up retain each era's official dropped-score rules. The first race weekend marked as won identifies the title-deciding Grand Prix; this may include a sprint. Unfinished championships are excluded.
+
+The helmet menu exposes profile, persistent light/dark preference and a local demonstration session. Neither the email form nor the Google preview authenticates a user; no passwords or tokens are collected. Firebase integration remains a separate step.
+
+The cockpit illustration is a generated industrial driver's-eye sketch with a blank display, black/red bodywork and a pit-lane perspective. Native HTML overlays provide the animated year, wheel scroll, paddles and accessible season dialog.
