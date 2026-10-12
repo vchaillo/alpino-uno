@@ -1,5 +1,5 @@
 import { createProfile } from './profile.js';
-import { createStatistics } from './statistics.js';
+import { createStatistics } from './statistics.js?v=5';
 import { flagEmoji, teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
