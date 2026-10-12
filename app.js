@@ -1,3 +1,4 @@
+import { createProfile } from './profile.js';
 import { createStatistics } from './statistics.js';
 import { flagEmoji, teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
@@ -12,10 +13,10 @@ function flag(country) {
   return emoji ? `<span class="flag" role="img" aria-label="${escapeHTML(country)}" title="${escapeHTML(country)}">${emoji}</span>` : '';
 }
 function teamIdentity(team, season) {
-  return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span>${flag(team?.nationality)}<span>${escapeHTML(team?.name || '—')}</span></span>`;
+  return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span><span>${escapeHTML(team?.name || '—')}</span></span>`;
 }
-function driverIdentity(driver, team, season) {
-  return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span>${flag(driver?.nationality)}<button class="driver-link" data-driver-name="${escapeHTML(fullName(driver))}">${escapeHTML(fullName(driver))}<span class="profile-arrow" aria-hidden="true">↗</span></button></span>`;
+function driverIdentity(driver, team, season, showFlag = true) {
+  return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span>${showFlag ? flag(driver?.nationality) : ''}<button class="driver-link" data-driver-name="${escapeHTML(fullName(driver))}">${escapeHTML(fullName(driver))}<span class="profile-arrow" aria-hidden="true">↗</span></button></span>`;
 }
 const storageKey = 'formula-one:collection:v1';
 let collection = {};
@@ -61,7 +62,7 @@ function matches(race) {
 }
 function actions(race) {
   const saved = preferences.get(raceKey(race));
-  return `<div class="card-actions"><button class="detail" data-detail="${raceKey(race)}">Explorer ↗</button>${[['favorite', '☆', 'Favori'], ['watched', '✓', 'Vue'], ['watchlist', '+', 'À voir']].map(([field, icon, label]) => `<button data-key="${raceKey(race)}" data-field="${field}" class="${saved[field] ? 'active' : ''}" aria-pressed="${Boolean(saved[field])}" aria-label="${label} : ${escapeHTML(race.raceName)}">${icon} ${label}</button>`).join('')}</div>`;
+  return `<div class="card-actions"><button class="detail" data-detail="${raceKey(race)}">Explorer <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></button>${[['favorite', '☆', 'Favori'], ['watched', '✓', 'Vue'], ['watchlist', '+', 'À voir']].map(([field, icon, label]) => `<button data-key="${raceKey(race)}" data-field="${field}" class="${saved[field] ? 'active' : ''}" aria-pressed="${Boolean(saved[field])}" aria-label="${label} : ${escapeHTML(race.raceName)}">${icon} ${label}</button>`).join('')}</div>`;
 }
 function renderRaces() {
   const races = state.view === 'collection' ? Object.values(collection).filter((item) => item.race && (item.favorite || item.watched || item.watchlist)).map((item) => item.race).sort((a,b) => b.date.localeCompare(a.date)).filter(matches) : state.races.filter(matches);
@@ -75,14 +76,16 @@ function standingsTable(items, constructors = false) {
   const max = Math.max(1, ...items.map((item) => Number(item.points)));
   const filtered = items.filter((item) => `${constructors ? item.Constructor.name : fullName(item.Driver)} ${item.Constructors?.map((team) => team.name).join(' ') || ''}`.toLowerCase().includes(query));
   if (!filtered.length) return '<p class="empty">Aucun classement disponible pour cette sélection.</p>';
-  return `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>${constructors ? 'Écurie' : 'Pilote'}</th><th>${constructors ? 'Nationalité' : 'Écurie'}</th><th>Victoires</th><th>Points</th></tr></thead><tbody>${filtered.map((item) => `<tr style="--team-color:${teamColor(constructors ? item.Constructor : item.Constructors?.[0], state.year)}"><td>${escapeHTML(item.position)}</td><td><strong>${constructors ? teamIdentity(item.Constructor, state.year) : driverIdentity(item.Driver, item.Constructors?.[0], state.year)}</strong></td><td>${constructors ? `${flag(item.Constructor.nationality)} ${escapeHTML(item.Constructor.nationality)}` : `<span class="team-list">${(item.Constructors || []).map((team) => teamIdentity(team, state.year)).join('')}</span>`}</td><td>${escapeHTML(item.wins)}</td><td class="points"><strong>${escapeHTML(item.points)}</strong><span class="bar" style="width:${Number(item.points) / max * 100}%"></span></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>${constructors ? 'Écurie' : 'Pilote'}</th>${constructors ? '<th>Nationalité</th>' : '<th>Nationalité</th><th>Écurie</th>'}<th>Victoires</th><th>Points</th></tr></thead><tbody>${filtered.map((item) => `<tr style="--team-color:${teamColor(constructors ? item.Constructor : item.Constructors?.[0], state.year)}"><td>${escapeHTML(item.position)}</td><td><strong>${constructors ? teamIdentity(item.Constructor, state.year) : driverIdentity(item.Driver, item.Constructors?.[0], state.year, false)}</strong></td>${constructors ? '' : `<td>${flag(item.Driver.nationality)}</td>`}<td>${constructors ? `${flag(item.Constructor.nationality)} ${escapeHTML(item.Constructor.nationality)}` : `<span class="team-list">${(item.Constructors || []).map((team) => teamIdentity(team, state.year)).join('')}</span>`}</td><td>${escapeHTML(item.wins)}</td><td class="points"><strong>${escapeHTML(item.points)}</strong><span class="bar" style="width:${Number(item.points) / max * 100}%"></span></td></tr>`).join('')}</tbody></table></div>`;
 }
 function render() {
-  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
+  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], profile: ['TON ESPACE PERSONNEL', 'Mon profil'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
   $('#section-label').textContent = titles[state.view][0]; $('#section-title').textContent = titles[state.view][1];
+  document.body.classList.toggle('profile-view', state.view === 'profile');
+  $('.filters').hidden = state.view === 'profile';
   $('#filter').hidden = !['races', 'collection'].includes(state.view);
   $('#tabs').querySelectorAll('button').forEach((button) => { if (button.dataset.view === state.view) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
-  if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
+  if (state.view === 'profile') profile.render(); else if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
   $('#results').setAttribute('aria-busy', 'false');
 }
 async function loadSeason() {
@@ -103,6 +106,7 @@ async function loadSeason() {
 }
 const dialog = $('#race-dialog');
 const statistics = createStatistics({ $, escapeHTML, dialog, driverIdentity, state });
+const profile = createProfile({ $, escapeHTML });
 async function showSession(race, session, token) {
   $('#session-results').innerHTML = '<p class="empty">Chargement…</p>';
   try {
@@ -141,3 +145,7 @@ $('#close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('close', () => { state.detailGeneration++; });
 dialog.addEventListener('click', (event) => { if (event.target === dialog) { const box = dialog.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close(); } });
 loadSeason();
+
+function navigateProfile() { if (location.hash === '#profil') { state.view = 'profile'; render(); } else if (state.view === 'profile') { state.view = 'races'; render(); } }
+window.addEventListener('hashchange', navigateProfile);
+navigateProfile();

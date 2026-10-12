@@ -32,3 +32,7 @@ The Statistics tab uses a compact snapshot adapted from [F1DB](https://github.co
 Records: world titles, Grand Prix wins, poles (not merely grid position), sprint wins, podiums, fastest laps, race starts, completed laps, grand slams and win percentage (minimum 20 starts for records). Driver profiles include season-by-season statistics. Laps led are unavailable in this source and explicitly marked; completed laps are not presented as laps led. Raw points and win rates need era context.
 
 Run `python3 scripts/refresh-statistics.py` to refresh the local snapshot.
+
+## Account preview
+
+The header's Profile link opens a demo profile with editable name, email and favorite team stored locally. Recent connections represent actual visits on this browser, not authenticated sessions. Password reset is a labeled simulation and sends no email. No authentication, password storage or server-side account changes are implemented.
