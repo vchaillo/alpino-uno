@@ -1,4 +1,4 @@
-import { teamLogo } from './branding.js?v=19';
+import { teamLogo } from './branding.js?v=20';
 import { trophyIcon } from './icons.js';
 import { renderFlag } from './flags.js?v=12';
 const METRICS = {
@@ -23,7 +23,7 @@ export function createStatistics({ $, escapeHTML, dialog, driverIdentity, state 
   const driverLink = (driver) => `<button class="driver-link" data-driver-id="${escapeHTML(driver.id)}">${teamLogo(driver.team)}<span>${escapeHTML(driver.name)}</span></button>`;
   async function load() {
     if (snapshot) return snapshot;
-    if (!pending) pending = fetch('./data/statistics.json.gz?v=19').then((response) => { if (!response.ok) throw Error('Les statistiques sont indisponibles.'); return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json(); }).then((data) => { if (!Array.isArray(data.drivers)) throw Error('Données de statistiques invalides.'); snapshot = data; return data; }).catch((error) => { pending = null; throw error; });
+    if (!pending) pending = fetch('./data/statistics.json.gz?v=20').then((response) => { if (!response.ok) throw Error('Les statistiques sont indisponibles.'); return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json(); }).then((data) => { if (!Array.isArray(data.drivers)) throw Error('Données de statistiques invalides.'); snapshot = data; return data; }).catch((error) => { pending = null; throw error; });
     return pending;
   }
   const sourceNote = () => `<p class="statistics-source">Données au ${new Date(snapshot.through + 'T12:00:00Z').toLocaleDateString('fr-FR')} · <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB ${escapeHTML(snapshot.version)} ↗</a> · CC BY 4.0. Les statistiques peuvent être mises à jour après le calendrier.</p>`;
@@ -85,5 +85,5 @@ export function createStatistics({ $, escapeHTML, dialog, driverIdentity, state 
     if (button) openProfile({ id: button.dataset.driverId, name: button.dataset.driverName });
   });
   dialog.addEventListener('close', () => generation++);
-  return { render, openProfile };
+  return { render, openProfile, load };
 }

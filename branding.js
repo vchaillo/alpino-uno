@@ -42,12 +42,12 @@ export function teamColor(team, season) {
   return TEAM_COLORS[id] || '#9A9AA6';
 }
 
-const TEAM_LOGOS = { mercedes:'mercedes', ferrari:'ferrari', mclaren:'mclaren', red_bull:'redbullracing', 'red-bull':'redbullracing', 'red-bull-racing':'redbullracing', rb:'racingbulls', racing_bulls:'racingbulls', 'racing-bulls':'racingbulls', alpine:'alpine', haas:'haasf1team', audi:'audi', williams:'williams', aston_martin:'astonmartin', 'aston-martin':'astonmartin', cadillac:'cadillac' };
+const TEAM_LOGOS = {"mercedes": "mercedes.webp", "ferrari": "ferrari.webp", "mclaren": "mclaren.webp", "redbullracing": "redbullracing.webp", "racingbulls": "racingbulls.webp", "alpine": "alpine.webp", "haasf1team": "haasf1team.webp", "audi": "audi.webp", "williams": "williams.webp", "astonmartin": "astonmartin.webp", "cadillac": "cadillac.webp", "alfa-romeo": "alfa-romeo.png", "lotus-f1": "lotus-f1.png", "caterham": "caterham.png", "marussia": "marussia.png", "renault": "renault.png", "kick-sauber": "kick-sauber.png", "alphatauri": "alphatauri.png", "manor": "manor.png", "force-india": "force-india.png", "rb": "rb.png", "sauber": "sauber.png", "racing-point": "racing-point.png", "toro-rosso": "toro-rosso.png", "benetton": "benetton.png", "brawn": "brawn.png", "prost": "prost.png", "theodore": "theodore.png", "bmw-sauber": "bmw-sauber.svg", "red_bull": "redbullracing.webp", "red-bull": "redbullracing.webp", "red-bull-racing": "redbullracing.webp", "racing_bulls": "racingbulls.webp", "racing-bulls": "racingbulls.webp", "haas": "haasf1team.webp", "aston_martin": "astonmartin.webp", "aston-martin": "astonmartin.webp", "alfa": "alfa-romeo.png", "toro_rosso": "toro-rosso.png", "racing_point": "racing-point.png", "force_india": "force-india.png", "lotus_f1": "lotus-f1.png", "kick_sauber": "kick-sauber.png", "bmw_sauber": "bmw-sauber.svg"};
 export function teamLogo(team) {
   const id = team?.constructorId || team?.id;
   const name = String(team?.name || 'Écurie non renseignée');
   const escaped = name.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  if (TEAM_LOGOS[id]) return `<img class="team-logo" src="assets/teams/${TEAM_LOGOS[id]}.webp" alt="${escaped}" title="${escaped}" width="32" height="28" loading="lazy">`;
+  if (TEAM_LOGOS[id]) return `<img class="team-logo" src="assets/teams/${TEAM_LOGOS[id]}" alt="${escaped}" title="${escaped}" width="32" height="28" loading="lazy">`;
   const initials=name==='Écurie non renseignée'?'—':name.split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase();
   return `<span class="team-logo team-logo-fallback" title="${escaped}" aria-label="${escaped}">${initials}</span>`;
 }

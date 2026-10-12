@@ -1,6 +1,6 @@
-import { teamLogo } from './branding.js?v=19';
+import { teamLogo } from './branding.js?v=20';
 import { trophyIcon } from './icons.js';
-import { createWorldMap } from './world-map.js?v=19';
+import { createWorldMap } from './world-map.js?v=20';
 import { renderFlag } from './flags.js?v=12';
 const normalize = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function resolveCircuit(circuits, input) {
@@ -27,7 +27,7 @@ export function createCircuits({ $, escapeHTML, state, layouts }) {
   const worldMap = createWorldMap({escapeHTML});
   async function load() {
     if (snapshot) return snapshot;
-    if (!pending) pending = fetch('./data/circuits.json.gz?v=19').then(response=>{if(!response.ok)throw Error('Les fiches circuits sont indisponibles.');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}).then(data=>{snapshot=data;return data;}).catch(error=>{pending=null;throw error;});
+    if (!pending) pending = fetch('./data/circuits.json.gz?v=20').then(response=>{if(!response.ok)throw Error('Les fiches circuits sont indisponibles.');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}).then(data=>{snapshot=data;return data;}).catch(error=>{pending=null;throw error;});
     return pending;
   }
   function circuit(input) { return snapshot ? resolveCircuit(snapshot.circuits,input) : null; }
@@ -79,5 +79,6 @@ export function createCircuits({ $, escapeHTML, state, layouts }) {
   modal.addEventListener('close',()=>profileGeneration++);
   $('#close-circuit').addEventListener('click',()=>modal.close());
   function summaryDrawing(race) { const record=circuit(race.Circuit);return record ? drawing(record,layoutFor(record,race),'summary-circuit-map') : ''; }
-  return {load,render,raceCard,detailLink,summaryDrawing};
+  function nameLink(race) {const record=circuit(race.Circuit);return record ? `<button class="circuit-name-link" data-circuit="${record.id}" data-circuit-season="${race.season}" data-circuit-round="${race.round}">${escapeHTML(race.Circuit.circuitName)}</button>` : `<span>${escapeHTML(race.Circuit.circuitName)}</span>`;}
+  return {load,render,raceCard,detailLink,summaryDrawing,nameLink};
 }

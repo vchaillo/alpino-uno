@@ -61,7 +61,25 @@ def generate(release, archive, svg_archive=None):
             'margin': round(winner['points'] - runner_up['points'], 3) if runner_up else None,
             'wins': season['totalRaceWins'],
             'clincher': {'name': grand_prix[race['grandPrixId']]['fullName'], 'round': race['round'], 'date': race['date']} if race else None})
-    snapshot = {'source': 'F1DB', 'license': 'CC BY 4.0', 'version': release['tag_name'], 'publishedAt': release['published_at'], 'generatedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'through': last_race['date'], 'drivers': drivers, 'champions': champions}
+    team_seasons = read('seasons-constructors')
+    team_records = []
+    for constructor in constructors.values():
+        rows = [row for row in team_seasons if row['constructorId'] == constructor['id']]
+        if not rows:
+            continue
+        team_results = [row for row in results if row['constructorId'] == constructor['id']]
+        driver_ids = sorted({row['driverId'] for row in team_results})
+        driver_records = []
+        for identifier in driver_ids:
+            driver = next(driver for driver in drivers if driver['id'] == identifier)
+            entries = [row for row in team_results if row['driverId'] == identifier]
+            driver_records.append({'id': identifier, 'name': driver['name'], 'countryCode':driver['countryCode'], 'races':len({row['raceId'] for row in entries}), 'wins':sum(row['positionNumber'] == 1 for row in entries)})
+        country = countries[constructor['countryId']]
+        team_records.append({'id':constructor['id'], 'name':constructor['name'], 'fullName':constructor['fullName'], 'country':country['name'], 'countryCode':country['alpha2Code'],
+            'firstYear':min(row['year'] for row in rows), 'lastYear':max(row['year'] for row in rows), 'drivers':driver_records,
+            'totalChampionshipWins':constructor['totalChampionshipWins'], **{key:constructor.get(key) for key in metrics if key != 'totalChampionshipWins'},
+            'seasons':[{'year':row['year'], 'position':row['positionNumber'], **{key:row.get(key) for key in metrics if key != 'totalChampionshipWins'}} for row in rows]})
+    snapshot = {'source': 'F1DB', 'license': 'CC BY 4.0', 'version': release['tag_name'], 'publishedAt': release['published_at'], 'generatedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'through': last_race['date'], 'drivers': drivers, 'champions': champions, 'teams':team_records}
     assert len(drivers) > 800, 'Incomplete driver directory'
     hamilton = next(row for row in drivers if row['id'] == 'lewis-hamilton')
     assert hamilton['totalChampionshipWins'] == 7 and hamilton['totalRaceWins'] >= 105

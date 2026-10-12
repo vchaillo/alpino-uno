@@ -1,13 +1,14 @@
+import { createTeams } from './teams.js?v=20';
 import { createViewLayout } from './view-layout.js';
 import { enableTableSorting } from './table-sort.js?v=16';
 import { trophyIcon } from './icons.js';
 import { renderFlag } from './flags.js?v=12';
 import { renderAnnualCalendar } from './calendar.js';
-import { createCircuits } from './circuits.js?v=19';
-import { createCockpits } from './cockpit.js?v=19';
-import { createProfile } from './profile.js?v=19';
-import { createStatistics } from './statistics.js?v=19';
-import { teamColor, teamLogo } from './branding.js?v=19';
+import { createCircuits } from './circuits.js?v=20';
+import { createCockpits } from './cockpit.js?v=20';
+import { createProfile } from './profile.js?v=20';
+import { createStatistics } from './statistics.js?v=20';
+import { teamColor, teamLogo } from './branding.js?v=20';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
 const $ = (selector) => document.querySelector(selector);
@@ -17,7 +18,7 @@ const dateLabel = (race) => new Date(`${race.date}T${race.time || '12:00:00Z'}`)
 const fullName = (driver) => `${driver?.givenName || ''} ${driver?.familyName || ''}`.trim();
 const flag = renderFlag;
 function teamIdentity(team, season) {
-  return `<span class="identity">${teamLogo(team)}<span>${escapeHTML(team?.name || '—')}</span></span>`;
+  return `<span class="identity">${teamLogo(team)}<button class="team-link" data-team-id="${escapeHTML(team?.constructorId || team?.id || '')}" data-team-name="${escapeHTML(team?.name || '')}">${escapeHTML(team?.name || '—')}</button></span>`;
 }
 function driverIdentity(driver, team, season, showTeam = true, winner = false) {
   return `<span class="identity">${showTeam ? teamLogo(team) : ''}<button class="driver-link" data-driver-name="${escapeHTML(fullName(driver))}">${escapeHTML(fullName(driver))}</button>${winner ? trophyIcon : ''}</span>`;
@@ -69,9 +70,15 @@ function matches(race) {
   const filter = $('#filter').value;
   return text.includes(search) && (filter === 'all' || (filter === 'upcoming' ? isUpcoming(race) : filter === 'finished' ? !isUpcoming(race) : preferences.get(raceKey(race))[filter]));
 }
-function actions(race) {
+const collectionIcons = {
+  star:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff:'<path d="m3 3 18 18M9.8 5.2A12 12 0 0 1 12 5c6.5 0 10 7 10 7a19 19 0 0 1-3 4M6.5 6.5A20 20 0 0 0 2 12s3.5 7 10 7a11 11 0 0 0 5.5-1.5M10 10a3 3 0 0 0 4 4"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',check:'<path d="m5 12 4 4L19 6"/>'
+};
+function actions(race, compact = false) {
   const saved = preferences.get(raceKey(race));
-  return `<div class="card-actions"><button class="detail" data-detail="${raceKey(race)}">Explorer <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></button>${[['favorite', '☆', 'Favori'], ['watched', '✓', 'Vue'], ['watchlist', '+', 'À voir']].map(([field, icon, label]) => `<button data-key="${raceKey(race)}" data-field="${field}" class="${saved[field] ? 'active' : ''}" aria-pressed="${Boolean(saved[field])}" aria-label="${label} : ${escapeHTML(race.raceName)}">${icon} ${label}</button>`).join('')}</div>`;
+  return `<div class="card-actions ${compact ? 'icon-actions' : ''}">${compact ? '' : `<button class="detail" data-detail="${raceKey(race)}">Explorer <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5"/></svg></button>`}${[['favorite','Favori',collectionIcons.star],['watched','Vu',saved.watched?collectionIcons.eye:collectionIcons.eyeOff],['watchlist','À voir',saved.watchlist?collectionIcons.check:collectionIcons.plus]].map(([field,label,icon])=>`<button data-key="${raceKey(race)}" data-field="${field}" class="collection-action ${saved[field]?'active':''}" aria-pressed="${Boolean(saved[field])}" aria-label="${label} : ${escapeHTML(race.raceName)}" title="${label}"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg>${compact?'':`<span>${label}</span>`}</button>`).join('')}</div>`;
 }
 function renderRaces() {
   const races = state.view === 'collection' ? Object.values(collection).filter((item) => item.race && (item.favorite || item.watched || item.watchlist)).map((item) => item.race).sort((a,b) => b.date.localeCompare(a.date)).filter(matches) : state.races.filter(matches);
@@ -85,7 +92,7 @@ function raceList(races) {
   if (!races.length) return '<p class="empty">Aucune course ici. Change les filtres ou ajoute des courses à ta collection.</p>';
   return `<div class="table-wrap race-list"><table><thead><tr><th>Saison / round</th><th>Date</th><th>Grand Prix</th><th>Circuit</th><th>Pays</th><th>Vainqueur</th><th>Actions</th></tr></thead><tbody>${races.map(race=>{
     const winner = state.view === 'collection' ? null : state.winners.find(item=>item.round===race.round)?.Results?.[0];
-    return `<tr><td data-sort-value="${race.season}-${String(race.round).padStart(2,'0')}">${race.season} · ${race.round}</td><td data-sort-value="${race.date}">${escapeHTML(dateLabel(race))}</td><td><strong>${escapeHTML(race.raceName)}</strong></td><td><span>${escapeHTML(race.Circuit.circuitName)}</span>${circuits.detailLink(race)}</td><td>${countryOnly(race.Circuit.Location.country)}</td><td>${winner ? driverIdentity(winner.Driver,winner.Constructor,race.season,true,true) : isUpcoming(race)?'À venir':'Consulter les résultats'}</td><td>${actions(race)}</td></tr>`;
+    return `<tr class="race-click-row" data-race-key="${raceKey(race)}" tabindex="0" aria-label="${escapeHTML(race.raceName)} · ${escapeHTML(dateLabel(race))}"><td data-sort-value="${race.season}-${String(race.round).padStart(2,'0')}">${race.season} · ${race.round}</td><td data-sort-value="${race.date}">${escapeHTML(dateLabel(race))}</td><td><strong>${escapeHTML(race.raceName)}</strong></td><td>${circuits.nameLink(race)}</td><td>${countryOnly(race.Circuit.Location.country)}</td><td>${winner ? driverIdentity(winner.Driver,winner.Constructor,race.season,true,true) : isUpcoming(race)?'À venir':'Consulter les résultats'}</td><td>${actions(race,true)}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 function renderLoading() {
@@ -149,6 +156,7 @@ async function loadSeason() {
 }
 const dialog = $('#race-dialog');
 const statistics = createStatistics({ $, escapeHTML, dialog, driverIdentity, state });
+const teams = createTeams({ $, escapeHTML, dialog, state, load: statistics.load, onSeason(year) { state.year=year; state.view='constructors'; loadSeason(); } });
 const profile = createProfile({ $, escapeHTML });
 const circuits = createCircuits({ $, escapeHTML, state, layouts });
 const cockpits = createCockpits({ initialYear: CURRENT_YEAR, onYearChange(year) { state.year = year; loadSeason(); } });
@@ -180,13 +188,20 @@ $('#tabs').addEventListener('click', (event) => { const view = event.target.clos
 $('#layout-controls').addEventListener('click',event=>{ const layout = event.target.closest('[data-layout]')?.dataset.layout; if (!layout) return; layouts.set(state.view,layout); renderedView = null; render(); });
 $('#search').addEventListener('input', render); $('#filter').addEventListener('change', render);
 $('#season-summary').addEventListener('click',event=>{const key=event.target.closest('[data-detail]')?.dataset.detail;const race=state.races.find(item=>raceKey(item)===key);if(race && !state.loading)openRace(race);});
-$('#results').addEventListener('click', (event) => {
-  const button = event.target.closest('button'); if (!button) return;
-  if (button.dataset.calendarDate) { const race = state.races.find(item=>item.date === button.dataset.calendarDate); if (race) openRace(race); return; }
-  const key = button.dataset.detail || button.dataset.key;
-  const race = state.races.find((item) => raceKey(item) === key) || preferences.get(key).race;
-  if (!race) return;
-  if (button.dataset.detail) openRace(race); else { preferences.toggle(key, button.dataset.field, race); render(); }
+$('#results').addEventListener('click',event=>{
+  const button=event.target.closest('button');
+  if(button?.dataset.calendarDate){const race=state.races.find(item=>item.date===button.dataset.calendarDate);if(race)openRace(race);return;}
+  if(button){
+    if(!button.dataset.field && !button.dataset.detail)return;
+    const key=button.dataset.detail || button.dataset.key;const race=state.races.find(item=>raceKey(item)===key)||preferences.get(key).race;if(!race)return;
+    if(button.dataset.detail)openRace(race);else{preferences.toggle(key,button.dataset.field,race);render();}return;
+  }
+  if(event.target.closest('a,[data-circuit],[data-driver-id],[data-driver-name],[data-team-id]'))return;
+  const row=event.target.closest('[data-race-key]');if(row){const race=state.races.find(item=>raceKey(item)===row.dataset.raceKey)||preferences.get(row.dataset.raceKey).race;if(race)openRace(race);}
+});
+$('#results').addEventListener('keydown',event=>{
+  if(!['Enter',' '].includes(event.key)||!event.target.matches('[data-race-key]'))return;
+  event.preventDefault();event.target.click();
 });
 $('#race-detail').addEventListener('click', (event) => {
   const target = event.target.closest('[data-session]'); const session = target?.dataset.session; if (!session || target.disabled) return;
