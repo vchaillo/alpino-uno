@@ -44,3 +44,9 @@ The hero uses an AI-generated transparent industrial side-profile car drawing, c
 ## Cockpit proposals
 
 The homepage presents three interactive industrial-style SVG cockpits. Left/right paddles select the previous/next season, while the wheel display opens a searchable year dialog. All three wheel displays, the existing season select and the race data share one season state. Year digits retain the odometer animation and reduced-motion behavior. On mobile, the same navigation node moves below the season summary to avoid duplicated controls.
+
+## Circuit archive
+
+Circuit profiles cover 78 circuits and 160 historical layouts using F1DB race metadata and SVG outlines by Jules Roy / F1DB (CC BY 4.0). The outline is selected by the race season and round; directory cards show the newest layout. Outlines are adapted to a consistent red contour style. Dates and length/turn counts follow each selected layout. Race counts and winner records include completed World Championship Grands Prix since 1950, excluding sprints and canceled events. Shared-car winners remain individually attributed.
+
+Circuit opening dates are shown only where verified from the circuit's official history (Silverstone, Monza, Spa); other profiles explicitly distinguish the first F1 event from the site's creation date. Statistics and drawings refresh in deployment along with the career snapshot.
