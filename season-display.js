@@ -4,7 +4,7 @@ export function createSeasonDisplay(element, initialYear) {
   let displayedYear = Number(initialYear);
   let animations = [];
   let generation = 0;
-  const needle = document.querySelector('.gauge-needle');
+  const needle = element.closest('.year-gauge')?.querySelector('.gauge-needle');
   const slots = Array.from({ length: 4 }, (_, index) => {
     const slot = document.createElement('span');
     slot.className = `year-digit${index > 1 ? ' accent-digit' : ''}`;

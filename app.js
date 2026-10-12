@@ -1,10 +1,9 @@
-import { createSeasonDisplay } from './season-display.js';
+import { createCockpits } from './cockpit.js?v=7';
 import { createProfile } from './profile.js';
 import { createStatistics } from './statistics.js?v=5';
 import { flagEmoji, teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
-const updateSeasonYear = createSeasonDisplay(document.querySelector('#hero-year'), CURRENT_YEAR);
 const $ = (selector) => document.querySelector(selector);
 const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 const safeURL = (value) => { try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) ? escapeHTML(url.href.replace(/^http:/, 'https:')) : '#'; } catch { return '#'; } };
@@ -92,7 +91,7 @@ function render() {
 }
 async function loadSeason() {
   const generation = ++state.generation;
-  updateSeasonYear(state.year); $('#season').value = state.year;
+  cockpits.update(state.year); $('#season').value = state.year;
   $('#previous').disabled = state.year <= 1950; $('#next').disabled = state.year >= CURRENT_YEAR;
   $('#notice').textContent = 'Chargement de la saison…'; $('#results').setAttribute('aria-busy', 'true');
   state.races = []; state.winners = []; state.drivers = []; state.constructors = []; $('#stats').innerHTML = ''; render(); $('#results').setAttribute('aria-busy', 'true');
@@ -109,6 +108,7 @@ async function loadSeason() {
 const dialog = $('#race-dialog');
 const statistics = createStatistics({ $, escapeHTML, dialog, driverIdentity, state });
 const profile = createProfile({ $, escapeHTML });
+const cockpits = createCockpits({ initialYear: CURRENT_YEAR, onYearChange(year) { state.year = year; loadSeason(); } });
 async function showSession(race, session, token) {
   $('#session-results').innerHTML = '<p class="empty">Chargement…</p>';
   try {
