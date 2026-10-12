@@ -1,8 +1,10 @@
-import { createCircuits } from './circuits.js?v=9';
+import { renderFlag } from './flags.js';
+import { renderAnnualCalendar } from './calendar.js';
+import { createCircuits } from './circuits.js?v=10';
 import { createCockpits } from './cockpit.js?v=7';
 import { createProfile } from './profile.js';
-import { createStatistics } from './statistics.js?v=5';
-import { flagEmoji, teamColor } from './branding.js';
+import { createStatistics } from './statistics.js?v=10';
+import { teamColor } from './branding.js';
 const API = 'https://api.jolpi.ca/ergast/f1/';
 const CURRENT_YEAR = new Date().getFullYear();
 const $ = (selector) => document.querySelector(selector);
@@ -10,10 +12,7 @@ const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (character
 const safeURL = (value) => { try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) ? escapeHTML(url.href.replace(/^http:/, 'https:')) : '#'; } catch { return '#'; } };
 const dateLabel = (race) => new Date(`${race.date}T${race.time || '12:00:00Z'}`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 const fullName = (driver) => `${driver?.givenName || ''} ${driver?.familyName || ''}`.trim();
-function flag(country) {
-  const emoji = flagEmoji(country);
-  return emoji ? `<span class="flag" role="img" aria-label="${escapeHTML(country)}" title="${escapeHTML(country)}">${emoji}</span>` : '';
-}
+const flag = renderFlag;
 function teamIdentity(team, season) {
   return `<span class="identity" style="--team-color:${teamColor(team, season)}"><span class="team-dot" aria-hidden="true"></span><span>${escapeHTML(team?.name || '—')}</span></span>`;
 }
@@ -81,13 +80,13 @@ function standingsTable(items, constructors = false) {
   return `<div class="table-wrap"><table><thead><tr><th>Pos.</th><th>${constructors ? 'Écurie' : 'Pilote'}</th>${constructors ? '<th>Nationalité</th>' : '<th>Nationalité</th><th>Écurie</th>'}<th>Victoires</th><th>Points</th></tr></thead><tbody>${filtered.map((item) => `<tr style="--team-color:${teamColor(constructors ? item.Constructor : item.Constructors?.[0], state.year)}"><td>${escapeHTML(item.position)}</td><td><strong>${constructors ? teamIdentity(item.Constructor, state.year) : driverIdentity(item.Driver, item.Constructors?.[0], state.year, false)}</strong></td>${constructors ? '' : `<td>${flag(item.Driver.nationality)}</td>`}<td>${constructors ? `${flag(item.Constructor.nationality)} ${escapeHTML(item.Constructor.nationality)}` : `<span class="team-list">${(item.Constructors || []).map((team) => teamIdentity(team, state.year)).join('')}</span>`}</td><td>${escapeHTML(item.wins)}</td><td class="points"><strong>${escapeHTML(item.points)}</strong><span class="bar" style="width:${Number(item.points) / max * 100}%"></span></td></tr>`).join('')}</tbody></table></div>`;
 }
 function render() {
-  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], circuits: ['LES TRACÉS DE LA FORMULE 1', 'Circuits & records'], profile: ['TON ESPACE PERSONNEL', 'Mon profil'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
+  const titles = { races: ['LE CALENDRIER', 'Les Grands Prix'], drivers: ['LE CHAMPIONNAT', 'Classement des pilotes'], constructors: ['LE CHAMPIONNAT', 'Classement des écuries'], calendar: ['LA SAISON EN UN COUP D’ŒIL', `Calendrier ${state.year}`], circuits: ['LES TRACÉS DE LA FORMULE 1', 'Circuits & records'], profile: ['TON ESPACE PERSONNEL', 'Mon profil'], statistics: ['LES RECORDS DE LA FORMULE 1', 'Statistiques & carrières'], collection: ['TON HISTOIRE AVEC LA F1', 'Ma collection · toutes les saisons'] };
   $('#section-label').textContent = titles[state.view][0]; $('#section-title').textContent = titles[state.view][1];
   document.body.classList.toggle('profile-view', state.view === 'profile');
   $('.filters').hidden = state.view === 'profile';
-  $('#filter').hidden = !['races', 'collection'].includes(state.view);
+  $('#filter').hidden = !['races', 'collection', 'calendar'].includes(state.view);
   $('#tabs').querySelectorAll('button').forEach((button) => { if (button.dataset.view === state.view) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current'); });
-  if (state.view === 'circuits') circuits.render($('#search').value); else if (state.view === 'profile') profile.render(); else if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
+  if (state.view === 'calendar') $('#results').innerHTML = renderAnnualCalendar({year:state.year,races:state.races.filter(matches),escapeHTML,renderFlag}); else if (state.view === 'circuits') circuits.render($('#search').value); else if (state.view === 'profile') profile.render(); else if (state.view === 'statistics') statistics.render($('#search').value); else if (['races', 'collection'].includes(state.view)) renderRaces(); else $('#results').innerHTML = standingsTable(state[state.view], state.view === 'constructors');
   $('#results').setAttribute('aria-busy', 'false');
 }
 async function loadSeason() {
@@ -135,6 +134,7 @@ $('#tabs').addEventListener('click', (event) => { const view = event.target.clos
 $('#search').addEventListener('input', render); $('#filter').addEventListener('change', render);
 $('#results').addEventListener('click', (event) => {
   const button = event.target.closest('button'); if (!button) return;
+  if (button.dataset.calendarDate) { const race = state.races.find(item=>item.date === button.dataset.calendarDate); if (race) openRace(race); return; }
   const key = button.dataset.detail || button.dataset.key;
   const race = state.races.find((item) => raceKey(item) === key) || preferences.get(key).race;
   if (!race) return;

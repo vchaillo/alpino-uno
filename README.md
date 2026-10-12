@@ -1,4 +1,4 @@
-# Formula One
+# Calpino Uno
 
 A responsive, French-language Formula 1 explorer for every season from 1950 to the current year. Independent fan project, not affiliated with Formula 1.
 
@@ -50,3 +50,7 @@ The homepage presents three interactive industrial-style SVG cockpits. Left/righ
 Circuit profiles cover 78 circuits and 160 historical layouts using F1DB race metadata and SVG outlines by Jules Roy / F1DB (CC BY 4.0). The outline is selected by the race season and round; directory cards show the newest layout. Outlines are adapted to a consistent red contour style. Dates and length/turn counts follow each selected layout. Race counts and winner records include completed World Championship Grands Prix since 1950, excluding sprints and canceled events. Shared-car winners remain individually attributed.
 
 Circuit opening dates are shown only where verified from the circuit's official history (Silverstone, Monza, Spa); other profiles explicitly distinguish the first F1 event from the site's creation date. Statistics and drawings refresh in deployment along with the career snapshot.
+
+## Annual calendar and flags
+
+The Calendar tab shows all twelve months, Monday-first, with race dates and accessible links opening race details. It follows the selected season and supports existing search/filters. Calendar placement uses each published race date. Country flags use bundled flag-icons SVG assets (MIT) rather than emoji fonts. Legacy storage keys are preserved so existing personal data remains available on the same GitHub Pages origin after the repository rename.
